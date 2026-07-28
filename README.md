@@ -1,6 +1,6 @@
 # Final-Project-CS184
 Group members:
-Jacob Landman
-Tony Li
-Jordan (fill in)
-Howard (fill in)
+Jacob Landman,
+Tony Li,
+Howard Yao,
+Jordan Velasco
