@@ -100,11 +100,12 @@ int main(int argc, char* argv[]) {
 
             // Write PNG
             if (config.output_modes & static_cast<int>(OutputMode::Full)) {
+                std::cout << "Frame " << frame << ": Writing PNG...\n";
                 std::ostringstream png_path;
                 png_path << frames_dir << "/" << config.video.output_filename_base << "_full_" 
-                         << std::setfill('0') << std::setw(4) << frame << ".png";
+                        << std::setfill('0') << std::setw(4) << frame << ".png";
                 ImageOutput::write_png(png_path.str(), ldr_frame, 
-                                      config.render.output_width, config.render.output_height);
+                                    config.render.output_width, config.render.output_height);
             }
 
             // Progress

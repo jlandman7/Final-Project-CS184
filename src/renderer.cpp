@@ -103,32 +103,11 @@ void Renderer::load_shaders() {
             vec3 normal;
         } fs_in;
 
-        uniform vec3 light_dir;
-        uniform vec3 camera_pos;
-        
-        const vec3 light_color = vec3(1.0, 1.0, 1.0);
-        const float ambient_strength = 0.3;
-        const float diffuse_strength = 0.6;
-        const float specular_strength = 0.3;
-        const float shininess = 32.0;
-
         void main() {
             vec3 normal = normalize(fs_in.normal);
             
-            // Ambient
-            vec3 ambient = ambient_strength * light_color;
-            
-            // Diffuse
-            float diff = max(dot(normal, light_dir), 0.0);
-            vec3 diffuse = diffuse_strength * diff * light_color;
-            
-            // Specular (Blinn-Phong)
-            vec3 view_dir = normalize(camera_pos - fs_in.position);
-            vec3 halfway = normalize(light_dir + view_dir);
-            float spec = pow(max(dot(normal, halfway), 0.0), shininess);
-            vec3 specular = specular_strength * spec * light_color;
-            
-            vec3 color = (ambient + diffuse + specular);
+            // Visualize normals as RGB colors
+            vec3 color = normal * 0.5 + 0.5;
             
             out_color = vec4(color, 1.0);
             out_normal = vec4(normal, 1.0);
@@ -139,6 +118,15 @@ void Renderer::load_shaders() {
     GLuint vs = compile_shader(vertex_source, GL_VERTEX_SHADER);
     GLuint fs = compile_shader(fragment_source, GL_FRAGMENT_SHADER);
     shader_program = link_program(vs, fs);
+
+    // Debug: verify shader uniforms
+    std::cout << "Shader program ID: " << shader_program << "\n";
+    std::cout << "Uniform locations:\n";
+    std::cout << "  projection: " << glGetUniformLocation(shader_program, "projection") << "\n";
+    std::cout << "  view: " << glGetUniformLocation(shader_program, "view") << "\n";
+    std::cout << "  model: " << glGetUniformLocation(shader_program, "model") << "\n";
+    std::cout << "  light_dir: " << glGetUniformLocation(shader_program, "light_dir") << "\n";
+    std::cout << "  camera_pos: " << glGetUniformLocation(shader_program, "camera_pos") << "\n";
 }
 
 void Renderer::setup_camera() {
@@ -150,14 +138,14 @@ void Renderer::setup_camera() {
 void Renderer::render_frame(float time) {
     framebuffer->bind();
 
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    // Use a very obvious clear color to test
+    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);  // Bright red
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-    // Temporarily disable culling to debug
-    // glEnable(GL_CULL_FACE);
-    // glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
 
     glUseProgram(shader_program);
 
@@ -165,14 +153,9 @@ void Renderer::render_frame(float time) {
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(shader_program, "model"), 1, GL_FALSE, glm::value_ptr(model));
-    
-    glm::vec3 light_dir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.5f));
-    glUniform3fv(glGetUniformLocation(shader_program, "light_dir"), 1, glm::value_ptr(light_dir));
-    glUniform3fv(glGetUniformLocation(shader_program, "camera_pos"), 1, glm::value_ptr(camera_pos));
 
     cornell_box.render();
 
     glUseProgram(0);
-    glDisable(GL_CULL_FACE);
     framebuffer->unbind();
 }

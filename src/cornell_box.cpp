@@ -13,73 +13,53 @@ CornellBox::~CornellBox() {
 void CornellBox::generate_procedural() {
     const float size = 1.0f;
     
-    glm::vec3 p000(0, 0, 0);
-    glm::vec3 p100(size, 0, 0);
-    glm::vec3 p010(0, size, 0);
-    glm::vec3 p110(size, size, 0);
-    glm::vec3 p001(0, 0, size);
-    glm::vec3 p101(size, 0, size);
-    glm::vec3 p011(0, size, size);
-    glm::vec3 p111(size, size, size);
-
     mesh.positions.clear();
     mesh.normals.clear();
     mesh.indices.clear();
 
-    // Bottom face (y = 0)
-    add_box_face(p000, p100, p110, p010);
-    // Top face (y = size)
-    add_box_face(p010, p110, p111, p011);
-    // Back face (z = size)
-    add_box_face(p001, p101, p111, p011);
-    // Front face (z = 0)
-    add_box_face(p000, p010, p110, p100);
-    // Left face (x = 0)
-    add_box_face(p000, p001, p011, p010);
-    // Right face (x = size)
-    add_box_face(p100, p110, p111, p101);
+    // Helper to add a quad with explicit normal
+    auto add_quad = [this](glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 normal) {
+        GLuint base = mesh.positions.size();
+        mesh.positions.push_back(p0);
+        mesh.positions.push_back(p1);
+        mesh.positions.push_back(p2);
+        mesh.positions.push_back(p3);
+        
+        for (int i = 0; i < 4; ++i) {
+            mesh.normals.push_back(normal);
+        }
+        
+        mesh.indices.push_back(base + 0);
+        mesh.indices.push_back(base + 1);
+        mesh.indices.push_back(base + 2);
+        mesh.indices.push_back(base + 0);
+        mesh.indices.push_back(base + 2);
+        mesh.indices.push_back(base + 3);
+    };
+
+    // Bottom face (y = 0), normal = (0, -1, 0)
+    add_quad(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0));
+    
+    // Top face (y = 1), normal = (0, 1, 0)
+    add_quad(glm::vec3(0, 1, 0), glm::vec3(0, 1, 1), glm::vec3(1, 1, 1), glm::vec3(1, 1, 0), glm::vec3(0, 1, 0));
+    
+    // Front face (z = 0), normal = (0, 0, -1)
+    add_quad(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(1, 1, 0), glm::vec3(1, 0, 0), glm::vec3(0, 0, -1));
+    
+    // Back face (z = 1), normal = (0, 0, 1)
+    add_quad(glm::vec3(0, 0, 1), glm::vec3(1, 0, 1), glm::vec3(1, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 0, 1));
+    
+    // Left face (x = 0), normal = (-1, 0, 0)
+    add_quad(glm::vec3(0, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0, 1, 1), glm::vec3(0, 1, 0), glm::vec3(-1, 0, 0));
+    
+    // Right face (x = 1), normal = (1, 0, 0)
+    add_quad(glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, 1), glm::vec3(1, 0, 1), glm::vec3(1, 0, 0));
 
     setup_buffers();
 
-    // Debug output
-    std::cout << "Cornell Box Debug:\n";
-    std::cout << "  Vertices: " << mesh.positions.size() << "\n";
-    std::cout << "  Triangles: " << mesh.indices.size() / 3 << "\n";
-    std::cout << "  First 3 vertices:\n";
-    for (int i = 0; i < std::min(3, (int)mesh.positions.size()); ++i) {
-        std::cout << "    [" << i << "] pos=(" << mesh.positions[i].x << "," 
-                  << mesh.positions[i].y << "," << mesh.positions[i].z << ") norm=("
-                  << mesh.normals[i].x << "," << mesh.normals[i].y << "," << mesh.normals[i].z << ")\n";
-    }
-}
-
-void CornellBox::add_box_face(glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3) {
-    glm::vec3 edge1 = p1 - p0;
-    glm::vec3 edge2 = p2 - p0;
-    glm::vec3 normal = glm::normalize(glm::cross(edge1, edge2));
-    
-    // Flip normal to point inward (we're inside the box)
-    normal = -normal;
-
-    GLuint base_index = mesh.positions.size();
-
-    mesh.positions.push_back(p0);
-    mesh.positions.push_back(p1);
-    mesh.positions.push_back(p2);
-    mesh.positions.push_back(p3);
-
-    mesh.normals.push_back(normal);
-    mesh.normals.push_back(normal);
-    mesh.normals.push_back(normal);
-    mesh.normals.push_back(normal);
-
-    mesh.indices.push_back(base_index + 0);
-    mesh.indices.push_back(base_index + 1);
-    mesh.indices.push_back(base_index + 2);
-
-    mesh.indices.push_back(base_index + 0);
-    mesh.indices.push_back(base_index + 2);
-    mesh.indices.push_back(base_index + 3);
+    std::cout << "Generated procedural Cornell box: " 
+              << mesh.positions.size() << " vertices, "
+              << mesh.indices.size() / 3 << " triangles\n";
 }
 
 void CornellBox::load_from_dae(const std::string& filepath) {
@@ -127,6 +107,13 @@ void CornellBox::setup_buffers() {
 }
 
 void CornellBox::render() const {
+    static bool first = true;
+    if (first) {
+        std::cout << "CornellBox::render() called\n";
+        std::cout << "  VAO: " << vao << "\n";
+        std::cout << "  Index count: " << mesh.indices.size() << "\n";
+        first = false;
+    }
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

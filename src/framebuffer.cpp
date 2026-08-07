@@ -2,6 +2,7 @@
 #include "framebuffer.h"
 #include <stdexcept>
 #include <iostream>
+#include <map>
 
 Framebuffer::Framebuffer(int width, int height)
     : width(width), height(height), fbo(0), color_texture(0), 
@@ -89,11 +90,27 @@ void Framebuffer::unbind() const {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+// In framebuffer.cpp read_color_to_cpu
 void Framebuffer::read_color_to_cpu(std::vector<glm::vec4>& out_pixels) const {
     out_pixels.resize(width * height);
     glBindTexture(GL_TEXTURE_2D, color_texture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, out_pixels.data());
     glBindTexture(GL_TEXTURE_2D, 0);
+    
+    // Debug histogram
+    std::map<int, int> histogram;
+    for (const auto& p : out_pixels) {
+        int bucket = static_cast<int>(p.r * 10);
+        histogram[bucket]++;
+    }
+    
+    static int count = 0;
+    if (count++ == 0) {
+        std::cout << "HDR values histogram (R channel):\n";
+        for (auto& [bucket, freq] : histogram) {
+            std::cout << "  " << (bucket * 0.1f) << ": " << freq << " pixels\n";
+        }
+    }
 }
 
 void Framebuffer::cleanup() {
