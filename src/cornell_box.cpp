@@ -11,13 +11,10 @@ CornellBox::~CornellBox() {
 }
 
 void CornellBox::generate_procedural() {
-    const float size = 1.0f;
-    
     mesh.positions.clear();
     mesh.normals.clear();
     mesh.indices.clear();
 
-    // Helper to add a quad with explicit normal
     auto add_quad = [this](glm::vec3 p0, glm::vec3 p1, glm::vec3 p2, glm::vec3 p3, glm::vec3 normal) {
         GLuint base = mesh.positions.size();
         mesh.positions.push_back(p0);
@@ -37,29 +34,15 @@ void CornellBox::generate_procedural() {
         mesh.indices.push_back(base + 3);
     };
 
-    // Bottom face (y = 0), normal = (0, -1, 0)
+    // Bottom, top, front, back, left, right
     add_quad(glm::vec3(0, 0, 0), glm::vec3(1, 0, 0), glm::vec3(1, 0, 1), glm::vec3(0, 0, 1), glm::vec3(0, -1, 0));
-    
-    // Top face (y = 1), normal = (0, 1, 0)
     add_quad(glm::vec3(0, 1, 0), glm::vec3(0, 1, 1), glm::vec3(1, 1, 1), glm::vec3(1, 1, 0), glm::vec3(0, 1, 0));
-    
-    // Front face (z = 0), normal = (0, 0, -1)
     add_quad(glm::vec3(0, 0, 0), glm::vec3(0, 1, 0), glm::vec3(1, 1, 0), glm::vec3(1, 0, 0), glm::vec3(0, 0, -1));
-    
-    // Back face (z = 1), normal = (0, 0, 1)
     add_quad(glm::vec3(0, 0, 1), glm::vec3(1, 0, 1), glm::vec3(1, 1, 1), glm::vec3(0, 1, 1), glm::vec3(0, 0, 1));
-    
-    // Left face (x = 0), normal = (-1, 0, 0)
     add_quad(glm::vec3(0, 0, 0), glm::vec3(0, 0, 1), glm::vec3(0, 1, 1), glm::vec3(0, 1, 0), glm::vec3(-1, 0, 0));
-    
-    // Right face (x = 1), normal = (1, 0, 0)
     add_quad(glm::vec3(1, 0, 0), glm::vec3(1, 1, 0), glm::vec3(1, 1, 1), glm::vec3(1, 0, 1), glm::vec3(1, 0, 0));
 
     setup_buffers();
-
-    std::cout << "Generated procedural Cornell box: " 
-              << mesh.positions.size() << " vertices, "
-              << mesh.indices.size() / 3 << " triangles\n";
 }
 
 void CornellBox::load_from_dae(const std::string& filepath) {
@@ -107,13 +90,6 @@ void CornellBox::setup_buffers() {
 }
 
 void CornellBox::render() const {
-    static bool first = true;
-    if (first) {
-        std::cout << "CornellBox::render() called\n";
-        std::cout << "  VAO: " << vao << "\n";
-        std::cout << "  Index count: " << mesh.indices.size() << "\n";
-        first = false;
-    }
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, mesh.indices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

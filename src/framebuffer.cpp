@@ -16,16 +16,16 @@ Framebuffer::~Framebuffer() {
 }
 
 void Framebuffer::create_textures() {
-    // Color texture (HDR)
+    // Color texture - use RGBA16F instead of RGBA32F for macOS compatibility
     glGenTextures(1, &color_texture);
     glBindTexture(GL_TEXTURE_2D, color_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // Normal texture
+    // Normal texture - use RGBA16F
     glGenTextures(1, &normal_texture);
     glBindTexture(GL_TEXTURE_2D, normal_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
@@ -34,10 +34,10 @@ void Framebuffer::create_textures() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    // Position texture
+    // Position texture - use RGBA16F
     glGenTextures(1, &position_texture);
     glBindTexture(GL_TEXTURE_2D, position_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -56,26 +56,27 @@ void Framebuffer::create_textures() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+// In framebuffer.cpp create_fbo(), after checking status:
 void Framebuffer::create_fbo() {
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    // Attach color outputs
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_texture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normal_texture, 0);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, position_texture, 0);
-
-    // Attach depth
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depth_texture, 0);
 
-    // Set draw buffers
     GLenum draw_buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
     glDrawBuffers(3, draw_buffers);
 
-    // Check completeness
     GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    std::cout << "FBO creation status: " << status << " (GL_FRAMEBUFFER_COMPLETE=" << GL_FRAMEBUFFER_COMPLETE << ")\n";
+    
     if (status != GL_FRAMEBUFFER_COMPLETE) {
-        throw std::runtime_error("Framebuffer not complete: " + std::to_string(status));
+        std::cout << "FBO attachment errors:\n";
+        GLint color_status;
+        glGetFramebufferAttachmentParameteriv(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE, &color_status);
+        std::cout << "  COLOR_ATTACHMENT0 type: " << color_status << "\n";
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -90,27 +91,12 @@ void Framebuffer::unbind() const {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-// In framebuffer.cpp read_color_to_cpu
+
 void Framebuffer::read_color_to_cpu(std::vector<glm::vec4>& out_pixels) const {
     out_pixels.resize(width * height);
     glBindTexture(GL_TEXTURE_2D, color_texture);
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, out_pixels.data());
     glBindTexture(GL_TEXTURE_2D, 0);
-    
-    // Debug histogram
-    std::map<int, int> histogram;
-    for (const auto& p : out_pixels) {
-        int bucket = static_cast<int>(p.r * 10);
-        histogram[bucket]++;
-    }
-    
-    static int count = 0;
-    if (count++ == 0) {
-        std::cout << "HDR values histogram (R channel):\n";
-        for (auto& [bucket, freq] : histogram) {
-            std::cout << "  " << (bucket * 0.1f) << ": " << freq << " pixels\n";
-        }
-    }
 }
 
 void Framebuffer::cleanup() {

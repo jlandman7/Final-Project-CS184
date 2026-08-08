@@ -88,39 +88,44 @@ int main(int argc, char* argv[]) {
         auto start_time = std::chrono::high_resolution_clock::now();
 
         for (int frame = 0; frame < config.frame_count; ++frame) {
-            if (window.should_close()) break;
+            try {
+                if (window.should_close()) break;
 
-            float time = frame / config.render.output_fps;
-            renderer.render_frame(time);
+                float time = frame / config.render.output_fps;
+                renderer.render_frame(time);
 
-            renderer.read_color_to_cpu(hdr_buffer);
-            ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
-                                                      config.render.output_width,
-                                                      config.render.output_height);
+                // Read BEFORE swapping
+                renderer.read_color_to_cpu(hdr_buffer);
+                ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
+                                                        config.render.output_width,
+                                                        config.render.output_height);
 
-            // Write PNG
-            if (config.output_modes & static_cast<int>(OutputMode::Full)) {
-                std::cout << "Frame " << frame << ": Writing PNG...\n";
-                std::ostringstream png_path;
-                png_path << frames_dir << "/" << config.video.output_filename_base << "_full_" 
-                        << std::setfill('0') << std::setw(4) << frame << ".png";
-                ImageOutput::write_png(png_path.str(), ldr_frame, 
-                                    config.render.output_width, config.render.output_height);
+                // Write PNG
+                if (config.output_modes & static_cast<int>(OutputMode::Full)) {
+                    std::ostringstream png_path;
+                    png_path << frames_dir << "/" << config.video.output_filename_base << "_full_" 
+                            << std::setfill('0') << std::setw(4) << frame << ".png";
+                    ImageOutput::write_png(png_path.str(), ldr_frame, 
+                                        config.render.output_width, config.render.output_height);
+                }
+
+                // Progress
+                float progress = (frame + 1) / float(config.frame_count);
+                int bar_width = 50;
+                int filled = static_cast<int>(progress * bar_width);
+                std::cout << "\r[";
+                for (int i = 0; i < bar_width; ++i) {
+                    std::cout << (i < filled ? "=" : " ");
+                }
+                std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" 
+                        << (frame + 1) << "/" << config.frame_count << ")";
+                std::cout.flush();
+
+                window.poll_events();
+            } catch (const std::exception& e) {
+                std::cerr << "\nError on frame " << frame << ": " << e.what() << "\n";
+                break;
             }
-
-            // Progress
-            float progress = (frame + 1) / float(config.frame_count);
-            int bar_width = 50;
-            int filled = static_cast<int>(progress * bar_width);
-            std::cout << "\r[";
-            for (int i = 0; i < bar_width; ++i) {
-                std::cout << (i < filled ? "=" : " ");
-            }
-            std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" 
-                      << (frame + 1) << "/" << config.frame_count << ")";
-            std::cout.flush();
-
-            window.poll_events();
         }
 
         auto end_time = std::chrono::high_resolution_clock::now();
