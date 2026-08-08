@@ -13,42 +13,38 @@ A physically-based water surface renderer using height field simulation and phot
 
 ## Building
 
-### Dependencies
-
-- CMake 3.16+
-- C++17 compiler
-- OpenGL 4.5+
-- GLFW 3
-- GLEW
-- GLM
-
-### Linux/macOS
+### macOS
 
 ```bash
-# Install dependencies
-# macOS (Homebrew)
-brew install glfw glew glm cmake
+brew install glfw glm cmake
 
-# Ubuntu/Debian
-sudo apt-get install cmake libglfw3-dev libglew-dev libglm-dev
-
-# Download stb_image_write.h
-mkdir -p third_party
-curl -o third_party/stb_image_write.h https://raw.githubusercontent.com/nothings/stb/master/stb_image_write.h
-
-# Build
 mkdir build && cd build
 cmake ..
 cmake --build . --config Release
+./bin/water_sim --help
 ```
 
 ### Windows
 
 ```bash
-# Install via vcpkg or manually, then:
+# Using vcpkg (recommended)
+vcpkg install glfw3:x64-windows glm:x64-windows
+
 mkdir build && cd build
-cmake .. -DCMAKE_TOOLCHAIN_FILE=<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake
+cmake .. -DCMAKE_TOOLCHAIN_FILE=<path-to-vcpkg>/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build . --config Release
+.\bin\water_sim.exe --help
+```
+
+### Linux
+
+```bash
+sudo apt-get install libglfw3-dev libglm-dev cmake
+
+mkdir build && cd build
+cmake ..
+cmake --build . --config Release
+./bin/water_sim --help
 ```
 
 ## Usage

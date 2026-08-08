@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/c++
 CXX_DEFINES = -DGL_SILENCE_DEPRECATION
 
-CXX_INCLUDES = -I/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src -I/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/third_party/glad/include -I/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/third_party -iframework /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -isystem /opt/homebrew/include
+CXX_INCLUDES = -I/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src -I/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/third_party -iframework /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks -isystem /opt/homebrew/include
 
 CXX_FLAGSarm64 = -std=gnu++17 -arch arm64 -Wall -Wextra -O2
 

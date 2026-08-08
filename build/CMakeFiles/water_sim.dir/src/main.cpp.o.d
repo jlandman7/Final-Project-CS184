@@ -847,13 +847,6 @@ CMakeFiles/water_sim.dir/src/main.cpp.o: \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/cstdarg \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/sstream \
   /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/window.h \
-  /opt/homebrew/include/GLFW/glfw3.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gltypes.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/OpenGLAvailability.h \
-  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/os/availability.h \
-  /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/renderer.h \
-  /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/framebuffer.h \
   /opt/homebrew/include/glm/glm.hpp \
   /opt/homebrew/include/glm/detail/_fixes.hpp \
   /opt/homebrew/include/glm/detail/setup.hpp \
@@ -1059,6 +1052,12 @@ CMakeFiles/water_sim.dir/src/main.cpp.o: \
   /opt/homebrew/include/glm/integer.hpp \
   /opt/homebrew/include/glm/detail/func_integer.inl \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gl3.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/gltypes.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers/OpenGLAvailability.h \
+  /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/os/availability.h \
+  /opt/homebrew/include/GLFW/glfw3.h \
+  /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/renderer.h \
+  /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/framebuffer.h \
   /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/cornell_box.h \
   /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/image_output.h \
   /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include/c++/v1/iostream \

@@ -1,7 +1,14 @@
 // cornell_box.h
 #pragma once
 #include <glm/glm.hpp>
-#include <OpenGL/gl3.h>
+
+// Platform-specific OpenGL headers
+#ifdef _WIN32
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl3.h>
+#endif
+
 #include <vector>
 #include <string>
 

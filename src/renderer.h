@@ -1,9 +1,16 @@
 // renderer.h
 #pragma once
+#include <glm/glm.hpp>
+
+// Platform-specific OpenGL headers
+#ifdef _WIN32
+    #include <GL/gl.h>
+#else
+    #include <OpenGL/gl3.h>
+#endif
+
 #include "framebuffer.h"
 #include "cornell_box.h"
-#include <glm/glm.hpp>
-#include <OpenGL/gl3.h>
 #include <memory>
 #include <vector>
 
