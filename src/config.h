@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include "water_simulation.h"
 
 // Helper to generate timestamped output directory
 inline std::string get_timestamped_output_dir(const std::string& base_dir) {
@@ -73,6 +74,7 @@ struct AppConfig {
     std::string dae_file;              // Optional; empty = default scene
     std::string pre_simulated_cache;   // Only used if input_mode == PreSimulated
     
+    WaterSimulationConfig water;
     SimulationConfig sim;
     PhotonMappingConfig photons;
     RenderingConfig render;

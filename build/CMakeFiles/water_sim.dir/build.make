@@ -170,6 +170,34 @@ CMakeFiles/water_sim.dir/src/image_output.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/water_sim.dir/src/image_output.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/image_output.cpp -o CMakeFiles/water_sim.dir/src/image_output.cpp.s
 
+CMakeFiles/water_sim.dir/src/water_simulation.cpp.o: CMakeFiles/water_sim.dir/flags.make
+CMakeFiles/water_sim.dir/src/water_simulation.cpp.o: /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_simulation.cpp
+CMakeFiles/water_sim.dir/src/water_simulation.cpp.o: CMakeFiles/water_sim.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/water_sim.dir/src/water_simulation.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/water_sim.dir/src/water_simulation.cpp.o -MF CMakeFiles/water_sim.dir/src/water_simulation.cpp.o.d -o CMakeFiles/water_sim.dir/src/water_simulation.cpp.o -c /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_simulation.cpp
+
+CMakeFiles/water_sim.dir/src/water_simulation.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/water_sim.dir/src/water_simulation.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_simulation.cpp > CMakeFiles/water_sim.dir/src/water_simulation.cpp.i
+
+CMakeFiles/water_sim.dir/src/water_simulation.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/water_sim.dir/src/water_simulation.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_simulation.cpp -o CMakeFiles/water_sim.dir/src/water_simulation.cpp.s
+
+CMakeFiles/water_sim.dir/src/water_mesh.cpp.o: CMakeFiles/water_sim.dir/flags.make
+CMakeFiles/water_sim.dir/src/water_mesh.cpp.o: /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_mesh.cpp
+CMakeFiles/water_sim.dir/src/water_mesh.cpp.o: CMakeFiles/water_sim.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/water_sim.dir/src/water_mesh.cpp.o"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/water_sim.dir/src/water_mesh.cpp.o -MF CMakeFiles/water_sim.dir/src/water_mesh.cpp.o.d -o CMakeFiles/water_sim.dir/src/water_mesh.cpp.o -c /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_mesh.cpp
+
+CMakeFiles/water_sim.dir/src/water_mesh.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/water_sim.dir/src/water_mesh.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_mesh.cpp > CMakeFiles/water_sim.dir/src/water_mesh.cpp.i
+
+CMakeFiles/water_sim.dir/src/water_mesh.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/water_sim.dir/src/water_mesh.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/src/water_mesh.cpp -o CMakeFiles/water_sim.dir/src/water_mesh.cpp.s
+
 # Object files for target water_sim
 water_sim_OBJECTS = \
 "CMakeFiles/water_sim.dir/src/main.cpp.o" \
@@ -178,7 +206,9 @@ water_sim_OBJECTS = \
 "CMakeFiles/water_sim.dir/src/renderer.cpp.o" \
 "CMakeFiles/water_sim.dir/src/cornell_box.cpp.o" \
 "CMakeFiles/water_sim.dir/src/framebuffer.cpp.o" \
-"CMakeFiles/water_sim.dir/src/image_output.cpp.o"
+"CMakeFiles/water_sim.dir/src/image_output.cpp.o" \
+"CMakeFiles/water_sim.dir/src/water_simulation.cpp.o" \
+"CMakeFiles/water_sim.dir/src/water_mesh.cpp.o"
 
 # External object files for target water_sim
 water_sim_EXTERNAL_OBJECTS =
@@ -190,12 +220,14 @@ bin/water_sim: CMakeFiles/water_sim.dir/src/renderer.cpp.o
 bin/water_sim: CMakeFiles/water_sim.dir/src/cornell_box.cpp.o
 bin/water_sim: CMakeFiles/water_sim.dir/src/framebuffer.cpp.o
 bin/water_sim: CMakeFiles/water_sim.dir/src/image_output.cpp.o
+bin/water_sim: CMakeFiles/water_sim.dir/src/water_simulation.cpp.o
+bin/water_sim: CMakeFiles/water_sim.dir/src/water_mesh.cpp.o
 bin/water_sim: CMakeFiles/water_sim.dir/build.make
 bin/water_sim: /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework
 bin/water_sim: /opt/homebrew/lib/libglfw.3.5.dylib
 bin/water_sim: /opt/homebrew/lib/libglm.dylib
 bin/water_sim: CMakeFiles/water_sim.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable bin/water_sim"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Linking CXX executable bin/water_sim"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/water_sim.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

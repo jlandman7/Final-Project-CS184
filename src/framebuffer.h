@@ -20,6 +20,9 @@ public:
     void bind() const;
     void unbind() const;
 
+    // Get FBO handle
+    GLuint get_fbo() const { return fbo; }
+
     // Get texture handles for reading/sampling
     GLuint get_color_texture() const { return color_texture; }
     GLuint get_normal_texture() const { return normal_texture; }

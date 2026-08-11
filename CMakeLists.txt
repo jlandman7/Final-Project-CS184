@@ -13,6 +13,8 @@ set(SOURCES
     src/cornell_box.cpp
     src/framebuffer.cpp
     src/image_output.cpp
+    src/water_simulation.cpp
+    src/water_mesh.cpp
 )
 
 set(HEADERS
@@ -22,6 +24,8 @@ set(HEADERS
     src/cornell_box.h
     src/framebuffer.h
     src/image_output.h
+    src/water_simulation.h
+    src/water_mesh.h
 )
 
 add_executable(water_sim ${SOURCES} ${HEADERS})

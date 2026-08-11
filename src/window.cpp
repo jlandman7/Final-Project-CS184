@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include <iostream>
 
-Window::Window(int width, int height, const std::string& title)
+Window::Window(int width, int height, const std::string& title, bool visible)
     : window(nullptr), width(width), height(height) {
     
     if (!glfwInit()) {
@@ -23,6 +23,9 @@ Window::Window(int width, int height, const std::string& title)
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
     #endif
 
+    // Hide window if offscreen rendering
+    glfwWindowHint(GLFW_VISIBLE, visible ? GLFW_TRUE : GLFW_FALSE);
+
     window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
     if (!window) {
         glfwTerminate();
@@ -30,10 +33,7 @@ Window::Window(int width, int height, const std::string& title)
     }
 
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-    std::cout << "OpenGL " << glGetString(GL_VERSION) << "\n";
-    std::cout << "GLSL " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
+    glfwSwapInterval(visible ? 1 : 0); // Disable vsync if headless
 }
 
 Window::~Window() {

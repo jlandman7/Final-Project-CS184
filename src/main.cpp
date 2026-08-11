@@ -76,10 +76,22 @@ int main(int argc, char* argv[]) {
 
         std::cout << "Output: " << run_dir << "\n\n";
 
-        // Create window and renderer
-        Window window(config.render.output_width, config.render.output_height, "Water Simulator");
+        bool visualize = config.debug.window_mode != WindowVisualization::None;
+
+        // Always create the window/context (hidden if visualize is false)
+        Window window(config.render.output_width, config.render.output_height, "Water Simulator", visualize);
+
+        // Context is now active! Renderer initialization will succeed.
         Renderer renderer(config.render.output_width, config.render.output_height);
         renderer.init();
+
+        WaterSimulationConfig water_config = config.water;
+        WaterSimulation water_sim(water_config);
+        water_sim.initialize();
+        WaterMesh water_mesh(water_sim);
+        std::cout << "Water mesh created with " << water_sim.get_resolution() << "x" 
+          << water_sim.get_resolution() << " grid\n";
+        renderer.set_water_mesh(&water_mesh);
 
         std::vector<glm::vec4> hdr_buffer;
         std::vector<uint8_t> ldr_frame;
@@ -89,12 +101,18 @@ int main(int argc, char* argv[]) {
 
         for (int frame = 0; frame < config.frame_count; ++frame) {
             try {
-                if (window.should_close()) break;
+                if (visualize && window.should_close()) break;
 
                 float time = frame / config.render.output_fps;
+                
+                // Simulate water
+                water_sim.step();
+                water_mesh.update();
+
+                // Render ONLY to FBO for output
                 renderer.render_frame(time);
 
-                // Read BEFORE swapping
+                // Read from FBO
                 renderer.read_color_to_cpu(hdr_buffer);
                 ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
                                                         config.render.output_width,
@@ -109,6 +127,18 @@ int main(int argc, char* argv[]) {
                                         config.render.output_width, config.render.output_height);
                 }
 
+                // Display window if enabled (after we've rendered to FBO)
+                if (visualize) {
+                    int fb_w, fb_h;
+                    window.get_framebuffer_size(&fb_w, &fb_h);
+
+                    // Draw tone-mapped HDR texture across the full window framebuffer
+                    renderer.render_to_screen(fb_w, fb_h);
+
+                    window.swap_buffers();
+                    window.poll_events();
+                }
+
                 // Progress
                 float progress = (frame + 1) / float(config.frame_count);
                 int bar_width = 50;
@@ -121,7 +151,9 @@ int main(int argc, char* argv[]) {
                         << (frame + 1) << "/" << config.frame_count << ")";
                 std::cout.flush();
 
-                window.poll_events();
+                if (visualize) {
+                    window.poll_events();
+                }
             } catch (const std::exception& e) {
                 std::cerr << "\nError on frame " << frame << ": " << e.what() << "\n";
                 break;

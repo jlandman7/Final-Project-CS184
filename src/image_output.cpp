@@ -17,20 +17,26 @@ std::vector<uint8_t> ImageOutput::tone_map_to_ldr(const std::vector<glm::vec4>& 
                                                    int width, int height) {
     std::vector<uint8_t> ldr_pixels(width * height * 4);
 
-    for (size_t i = 0; i < hdr_pixels.size(); ++i) {
-        glm::vec3 color(hdr_pixels[i].r, hdr_pixels[i].g, hdr_pixels[i].b);
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            int src_idx = y * width + x;            // OpenGL row (0 = bottom)
+            int dst_y   = height - 1 - y;          // Image row  (0 = top)
+            int dst_idx = (dst_y * width + x) * 4;
 
-        // Tone mapping: Reinhard
-        color = color / (color + glm::vec3(1.0f));
+            glm::vec3 color(hdr_pixels[src_idx].r, hdr_pixels[src_idx].g, hdr_pixels[src_idx].b);
 
-        // Gamma correction
-        color = glm::pow(color, glm::vec3(1.0f / 2.2f));
+            // Reinhard tone mapping
+            color = color / (color + glm::vec3(1.0f));
 
-        // Clamp and convert to 8-bit
-        ldr_pixels[i * 4 + 0] = static_cast<uint8_t>(glm::clamp(color.r, 0.0f, 1.0f) * 255.0f);
-        ldr_pixels[i * 4 + 1] = static_cast<uint8_t>(glm::clamp(color.g, 0.0f, 1.0f) * 255.0f);
-        ldr_pixels[i * 4 + 2] = static_cast<uint8_t>(glm::clamp(color.b, 0.0f, 1.0f) * 255.0f);
-        ldr_pixels[i * 4 + 3] = 255;
+            // Gamma correction
+            color = glm::pow(color, glm::vec3(1.0f / 2.2f));
+
+            // Clamp and write
+            ldr_pixels[dst_idx + 0] = static_cast<uint8_t>(glm::clamp(color.r, 0.0f, 1.0f) * 255.0f);
+            ldr_pixels[dst_idx + 1] = static_cast<uint8_t>(glm::clamp(color.g, 0.0f, 1.0f) * 255.0f);
+            ldr_pixels[dst_idx + 2] = static_cast<uint8_t>(glm::clamp(color.b, 0.0f, 1.0f) * 255.0f);
+            ldr_pixels[dst_idx + 3] = 255;
+        }
     }
 
     return ldr_pixels;

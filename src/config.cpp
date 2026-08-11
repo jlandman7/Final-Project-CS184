@@ -77,9 +77,16 @@ AppConfig get_preset_defaults(PresetQuality preset) {
     config.sim.heightfield_variance = 0.5f;
     config.sim.heightfield_resolution = 256;
     config.video.save_png_sequence = false;
-    config.debug.window_mode = WindowVisualization::Full;
+    config.debug.window_mode = WindowVisualization::None;
     config.debug.verbose_logging = false;
     config.frame_count = 300;
+    config.water.grid_resolution = 128;
+    config.water.wave_speed = 1.0f;
+    config.water.damping = 0.01f;
+    config.water.harmonic_count = 5;
+    config.water.domain_size = 1.0f;
+    config.water.simulation_timestep = 0.002f; // Safe step size below CFL limit
+    config.water.init_mode = WaterInitializationMode::CosineWaves;
 
     if (preset == PresetQuality::Preview) {
         config.photons.photon_count = 10000;
@@ -176,6 +183,23 @@ AppConfig parse_cli(int argc, char* argv[]) {
         }
         else if (arg == "--verbose") {
             config.debug.verbose_logging = true;
+        }
+        else if (arg == "--water-grid" && i + 1 < argc) {
+            config.water.grid_resolution = parse_int(argv[++i], "--water-grid");
+        }
+        else if (arg == "--wave-speed" && i + 1 < argc) {
+            config.water.wave_speed = parse_float(argv[++i], "--wave-speed");
+        }
+        else if (arg == "--water-damping" && i + 1 < argc) {
+            config.water.damping = parse_float(argv[++i], "--water-damping");
+        }
+        else if (arg == "--harmonics" && i + 1 < argc) {
+            config.water.harmonic_count = parse_int(argv[++i], "--harmonics");
+        }
+        else if (arg == "--water-init" && i + 1 < argc) {
+            std::string mode_str = to_lower(argv[++i]);
+            config.water.init_mode = (mode_str == "fourier-bessel") ? 
+            WaterInitializationMode::FourierBessel : WaterInitializationMode::CosineWaves;
         }
         else {
             throw std::runtime_error("Unknown argument: " + arg);

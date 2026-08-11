@@ -45,7 +45,7 @@ namespace {
 }
 
 Renderer::Renderer(int width, int height) 
-    : shader_program(0), camera_pos(1.5f, 1.5f, 1.5f) {
+    : shader_program(0) {
     framebuffer = std::make_unique<Framebuffer>(width, height);
 }
 
@@ -56,6 +56,7 @@ Renderer::~Renderer() {
 void Renderer::init() {
     cornell_box.generate_procedural();
     load_shaders();
+    init_screen_quad();
     setup_camera();
 }
 
@@ -64,6 +65,7 @@ void Renderer::load_shaders() {
         #version 410 core
         layout (location = 0) in vec3 position;
         layout (location = 1) in vec3 normal;
+        layout (location = 2) in vec3 color;
 
         uniform mat4 projection;
         uniform mat4 view;
@@ -72,12 +74,14 @@ void Renderer::load_shaders() {
         out VS_OUT {
             vec3 position;
             vec3 normal;
+            vec3 color;
         } vs_out;
 
         void main() {
             gl_Position = projection * view * model * vec4(position, 1.0);
             vs_out.position = (model * vec4(position, 1.0)).xyz;
             vs_out.normal = normalize(mat3(model) * normal);
+            vs_out.color = color;
         }
     )glsl";
 
@@ -90,36 +94,40 @@ void Renderer::load_shaders() {
         in VS_OUT {
             vec3 position;
             vec3 normal;
+            vec3 color;
         } fs_in;
 
-        uniform vec3 light_dir;
         uniform vec3 camera_pos;
-        
-        const vec3 light_color = vec3(1.0, 1.0, 1.0);
-        const float ambient_strength = 0.3;
-        const float diffuse_strength = 0.6;
-        const float specular_strength = 0.3;
-        const float shininess = 32.0;
 
         void main() {
             vec3 normal = normalize(fs_in.normal);
-            
+
+            // Emissive area light patch check
+            if (fs_in.color.r > 2.0) {
+                out_color = vec4(fs_in.color, 1.0);
+                out_normal = vec4(normal, 1.0);
+                out_position = vec4(fs_in.position, 1.0);
+                return;
+            }
+
+            // Approximate area light as a center point light with quadratic attenuation
+            vec3 light_pos = vec3(0.5, 0.98, 0.5);
+            vec3 light_dir = light_pos - fs_in.position;
+            float dist = length(light_dir);
+            light_dir = normalize(light_dir);
+
+            float attenuation = 1.0 / (1.0 + 0.5 * dist + 1.0 * dist * dist);
+
             // Ambient
-            vec3 ambient = ambient_strength * light_color;
-            
+            vec3 ambient = 0.1 * fs_in.color;
+
             // Diffuse
             float diff = max(dot(normal, light_dir), 0.0);
-            vec3 diffuse = diffuse_strength * diff * light_color;
-            
-            // Specular (Blinn-Phong)
-            vec3 view_dir = normalize(camera_pos - fs_in.position);
-            vec3 halfway = normalize(light_dir + view_dir);
-            float spec = pow(max(dot(normal, halfway), 0.0), shininess);
-            vec3 specular = specular_strength * spec * light_color;
-            
-            vec3 color = (ambient + diffuse + specular);
-            
-            out_color = vec4(color, 1.0);
+            vec3 diffuse = diff * fs_in.color * attenuation * 2.0;
+
+            vec3 result = ambient + diffuse;
+
+            out_color = vec4(result, 1.0);
             out_normal = vec4(normal, 1.0);
             out_position = vec4(fs_in.position, 1.0);
         }
@@ -132,10 +140,18 @@ void Renderer::load_shaders() {
 
 void Renderer::setup_camera() {
     float aspect = framebuffer->get_width() / float(framebuffer->get_height());
-    projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 100.0f);
     
-    glm::vec3 target = glm::vec3(0.5f, 0.5f, 0.5f);
-    glm::vec3 up = glm::vec3(0, 1, 0);
+    // Narrower FOV (~38 degrees) prevents wide-angle edge distortion 
+    // and mimics a cinematic lens framing the box neatly.
+    projection = glm::perspective(glm::radians(38.0f), aspect, 0.1f, 100.0f);
+
+    // glm::vec3 camera_pos = glm::vec3(0.5f, 0.70f, 2.20f);
+    // glm::vec3 target = glm::vec3(0.5f, 0.38f, 0.45f);
+    
+    glm::vec3 camera_pos = glm::vec3(0.5f, 0.60f, 2.30f);
+    glm::vec3 target     = glm::vec3(0.5f, 0.40f, 0.50f);
+
+    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
     
     view = glm::lookAt(camera_pos, target, up);
 }
@@ -164,6 +180,96 @@ void Renderer::render_frame(float time) {
 
     cornell_box.render();
 
+    if (water_mesh) {
+        water_mesh->render();
+    }
+
     glUseProgram(0);
     framebuffer->unbind();
+}
+
+void Renderer::init_screen_quad() {
+    // 6-vertex standard quad covering NDC [-1, 1]
+    float screen_vertices[] = {
+        // Position    // TexCoords
+        -1.0f,  1.0f,  0.0f, 1.0f, // Top-Left
+        -1.0f, -1.0f,  0.0f, 0.0f, // Bottom-Left
+         1.0f, -1.0f,  1.0f, 0.0f, // Bottom-Right
+
+        -1.0f,  1.0f,  0.0f, 1.0f, // Top-Left
+         1.0f, -1.0f,  1.0f, 0.0f, // Bottom-Right
+         1.0f,  1.0f,  1.0f, 1.0f  // Top-Right
+    };
+
+    GLuint vbo;
+    glGenVertexArrays(1, &screen_vao);
+    glGenBuffers(1, &vbo);
+    glBindVertexArray(screen_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(screen_vertices), screen_vertices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindVertexArray(0);
+
+    std::string vs_src = R"glsl(
+        #version 410 core
+        layout (location = 0) in vec2 aPos;
+        layout (location = 1) in vec2 aTexCoord;
+        out vec2 TexCoord;
+        void main() {
+            TexCoord = aTexCoord;
+            gl_Position = vec4(aPos, 0.0, 1.0);
+        }
+    )glsl";
+
+    std::string fs_src = R"glsl(
+        #version 410 core
+        out vec4 FragColor;
+        in vec2 TexCoord;
+        uniform sampler2D hdrBuffer;
+
+        void main() {
+            vec3 hdrColor = texture(hdrBuffer, TexCoord).rgb;
+            
+            // Reinhard tone mapping
+            vec3 mapped = hdrColor / (hdrColor + vec3(1.0));
+            
+            // Gamma correction
+            mapped = pow(mapped, vec3(1.0 / 2.2));
+            
+            FragColor = vec4(mapped, 1.0);
+        }
+    )glsl";
+
+    GLuint vs = compile_shader(vs_src, GL_VERTEX_SHADER);
+    GLuint fs = compile_shader(fs_src, GL_FRAGMENT_SHADER);
+    display_shader_program = link_program(vs, fs);
+}
+
+void Renderer::render_to_screen(int window_fb_width, int window_fb_height) {
+    // Bind window framebuffer (0) and set viewport
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, window_fb_width, window_fb_height);
+
+    // Disable 3D depth testing and backface culling for full-screen pass
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(display_shader_program);
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, framebuffer->get_color_texture());
+    glUniform1i(glGetUniformLocation(display_shader_program, "hdrBuffer"), 0);
+
+    glBindVertexArray(screen_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    glUseProgram(0);
 }

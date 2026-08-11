@@ -273,6 +273,54 @@ src/renderer.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/renderer.cpp.s
 .PHONY : src/renderer.cpp.s
 
+src/water_mesh.o: src/water_mesh.cpp.o
+.PHONY : src/water_mesh.o
+
+# target to build an object file
+src/water_mesh.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_mesh.cpp.o
+.PHONY : src/water_mesh.cpp.o
+
+src/water_mesh.i: src/water_mesh.cpp.i
+.PHONY : src/water_mesh.i
+
+# target to preprocess a source file
+src/water_mesh.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_mesh.cpp.i
+.PHONY : src/water_mesh.cpp.i
+
+src/water_mesh.s: src/water_mesh.cpp.s
+.PHONY : src/water_mesh.s
+
+# target to generate assembly for a file
+src/water_mesh.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_mesh.cpp.s
+.PHONY : src/water_mesh.cpp.s
+
+src/water_simulation.o: src/water_simulation.cpp.o
+.PHONY : src/water_simulation.o
+
+# target to build an object file
+src/water_simulation.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_simulation.cpp.o
+.PHONY : src/water_simulation.cpp.o
+
+src/water_simulation.i: src/water_simulation.cpp.i
+.PHONY : src/water_simulation.i
+
+# target to preprocess a source file
+src/water_simulation.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_simulation.cpp.i
+.PHONY : src/water_simulation.cpp.i
+
+src/water_simulation.s: src/water_simulation.cpp.s
+.PHONY : src/water_simulation.s
+
+# target to generate assembly for a file
+src/water_simulation.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/water_simulation.cpp.s
+.PHONY : src/water_simulation.cpp.s
+
 src/window.o: src/window.cpp.o
 .PHONY : src/window.o
 
@@ -324,6 +372,12 @@ help:
 	@echo "... src/renderer.o"
 	@echo "... src/renderer.i"
 	@echo "... src/renderer.s"
+	@echo "... src/water_mesh.o"
+	@echo "... src/water_mesh.i"
+	@echo "... src/water_mesh.s"
+	@echo "... src/water_simulation.o"
+	@echo "... src/water_simulation.i"
+	@echo "... src/water_simulation.s"
 	@echo "... src/window.o"
 	@echo "... src/window.i"
 	@echo "... src/window.s"

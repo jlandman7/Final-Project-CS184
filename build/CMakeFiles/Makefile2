@@ -85,12 +85,12 @@ clean: CMakeFiles/water_sim.dir/clean
 CMakeFiles/water_sim.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8 "Built target water_sim"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10 "Built target water_sim"
 .PHONY : CMakeFiles/water_sim.dir/all
 
 # Build rule for subdir invocation for target.
 CMakeFiles/water_sim.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles 8
+	$(CMAKE_COMMAND) -E cmake_progress_start /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles 10
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/water_sim.dir/all
 	$(CMAKE_COMMAND) -E cmake_progress_start /Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles 0
 .PHONY : CMakeFiles/water_sim.dir/rule
@@ -102,7 +102,7 @@ water_sim: CMakeFiles/water_sim.dir/rule
 # codegen rule for target.
 CMakeFiles/water_sim.dir/codegen:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/codegen
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8 "Finished codegen for target water_sim"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/Users/jacoblandman/Documents/Code/CS184/final-project/Final-Project-CS184/build/CMakeFiles --progress-num=1,2,3,4,5,6,7,8,9,10 "Finished codegen for target water_sim"
 .PHONY : CMakeFiles/water_sim.dir/codegen
 
 # clean rule for target.
