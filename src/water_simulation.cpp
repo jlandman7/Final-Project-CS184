@@ -57,7 +57,7 @@ void WaterSimulation::initialize() {
 void WaterSimulation::initialize_cosine_waves() {
     // Base height (2/5 of box height = 0.4)
     float base_height = 0.4f;
-    float perturbation = 0.05f;  // Small initial displacement
+    float perturbation = 0.1f;  // Small initial displacement
 
     float dx = domain_size / (resolution - 1);
 
@@ -180,28 +180,24 @@ float WaterSimulation::laplacian(int x, int y) const {
 }
 
 void WaterSimulation::apply_boundary_conditions() {
-    // Neumann BC: no-flux at boundaries
-    // Already handled in laplacian() via mirroring
-    // Additional: damp energy at edges slightly to prevent reflection artifacts
+    // Neumann BC: ∂h/∂n = 0 at walls (no flux)
+    // Implementation: mirror heights at boundaries
     
-    float edge_damping = 0.99f;
-    int boundary_width = 2;
-
-    for (int i = 0; i < boundary_width; ++i) {
-        float factor = std::pow(edge_damping, boundary_width - i);
-
-        // Left and right edges
-        for (int y = 0; y < resolution; ++y) {
-            heights[index(i, y)] *= factor;
-            heights[index(resolution - 1 - i, y)] *= factor;
-        }
-
-        // Top and bottom edges
-        for (int x = 0; x < resolution; ++x) {
-            heights[index(x, i)] *= factor;
-            heights[index(x, resolution - 1 - i)] *= factor;
-        }
+    for (int i = 0; i < resolution; ++i) {
+        // Left and right edges (x = 0, x = resolution-1)
+        heights[index(0, i)] = heights[index(1, i)];
+        heights[index(resolution - 1, i)] = heights[index(resolution - 2, i)];
+        
+        // Top and bottom edges (y = 0, y = resolution-1)
+        heights[index(i, 0)] = heights[index(i, 1)];
+        heights[index(i, resolution - 1)] = heights[index(i, resolution - 2)];
     }
+    
+    // Corners (average of neighbors)
+    heights[index(0, 0)] = (heights[index(1, 0)] + heights[index(0, 1)]) * 0.5f;
+    heights[index(resolution - 1, 0)] = (heights[index(resolution - 2, 0)] + heights[index(resolution - 1, 1)]) * 0.5f;
+    heights[index(0, resolution - 1)] = (heights[index(1, resolution - 1)] + heights[index(0, resolution - 2)]) * 0.5f;
+    heights[index(resolution - 1, resolution - 1)] = (heights[index(resolution - 2, resolution - 1)] + heights[index(resolution - 1, resolution - 2)]) * 0.5f;
 }
 
 float WaterSimulation::get_height(int x, int y) const {
