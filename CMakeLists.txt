@@ -31,23 +31,26 @@ set(HEADERS
 add_executable(water_sim ${SOURCES} ${HEADERS})
 
 find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(glm REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
 
 # Platform-specific linking
 if(WIN32)
     target_link_libraries(water_sim
         PRIVATE
-            opengl32
-            glfw
-            glm::glm
+        opengl32
+        glfw
+        glm::glm
+        glad::glad
     )
 else()
     target_link_libraries(water_sim
         PRIVATE
-            OpenGL::GL
-            glfw
-            glm::glm
+        OpenGL::GL
+        glfw
+        glm::glm
+        glad::glad
     )
 endif()
 

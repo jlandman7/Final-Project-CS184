@@ -1,0 +1,15 @@
+# CMake build artifacts
+build/
+
+# Visual Studiogit 
+.vs/
+
+# Rendered outputs
+out/
+output_dir/
+
+# Common generated binaries
+*.exe
+*.obj
+*.pdb
+*.ilk
