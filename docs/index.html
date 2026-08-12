@@ -1,0 +1,112 @@
+<html>
+	<head>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=default'></script>
+		<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+		<style>
+			h1 {
+				text-align: center;
+			}
+
+			.container {
+				margin: 0 auto;
+				padding: 60px 20%;
+			}
+
+			figure {
+				text-align: center;
+			}
+
+			img {
+				display: inline-block;
+			}
+
+			body {
+				font-family: 'Inter', sans-serif;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="container">
+		<h1>CS184 Spring 2026 Final Project Proposal</h1>
+		<div style="text-align: center;"> Jacob Landman, Tony Li, Howard Yao, Jordan Velasco </div>
+
+		<br>
+
+		Link to webpage: <a href="https://jlandman7.github.io/Final-Project-CS184/">github-pages-document</a>
+
+		<br>
+		
+		Link to GitHub repository: <a href="https://github.com/jlandman7/Final-Project-CS184">github-repo</a>
+
+            <br><br>
+        Video:
+        <video width="640" height="360" controls>
+        <source src="checkpoint_videos/Final Checkpoint CS184.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+        </video>
+
+		<h1>Procedural water rendering and lighting solutions</h1>
+      
+       <br>
+       Summary: Our idea is to simulate a small body of water that is passably realistic. We'll also implement a lighting solution to render it in a visually pleasing way.
+
+	    <br>
+
+		<video width="640" height="360" controls>
+  <source src="Howard_Milestone.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
+<h2> Problem Description </h2>
+The problem we’re trying to solve is rendering a realistic-seeming body of water. This is challenging because it is a fluid, so both static and dynamic qualities must be taken into account to get an acceptable outcome. We will weigh the pros and cons of different possible implementations like displacement mapping, particle systems, and dynamic mesh updating, then converge and implement one of those solutions. To complement whichever water dynamics approach we take, we’ll implement a lighting model like Blinn-Phong, ray tracing with BSSRDF, or photon mapping depending on the time and engineering constraints.
+<br><br>
+
+<h2> Goals and Deliverables </h2>
+<h3> What we plan to deliver </h3>
+
+<ul>
+<li>Photos & videos of simulated water, which would be artistically pleasing.</li>
+<li>An application which procedurally generates and evolves the water and lights the scene.</li>
+<li>A gamut of parameters to style the scene </li>
+</ul>
+
+<h3> What we hope to deliver </h3>
+
+<ul>
+<li> Realistic-looking water solution (perhaps modelling foam, spray, …)</li>
+<li> Ray-tracing / photon mapping lighting solution</li>
+<li> Real-time rendering capabilities</li>
+<li> Interactive perturbations (like throwing pebbles or larger rocks)</li>
+</ul>
+
+Out of the stretch goals, we're prioritizing realistic lighting.
+<br><br>
+
+<h2> Schedule </h2>
+<h3>Week 1: Planning</h3>
+During week 1, we will distribute the work and figure out what needs to be done to complete this project. We will research about the art of representing dynamic fluids in computer graphics and converge on an exact stack of implementations to work on. We'll also establish which stretch goals we should go for first, and what substitutions to make if we start running low on time.
+<h3>Week 2: Creating Implementation & Coding</h3>
+We will begin to put our ideas into practice, keeping up with the division of labor decided upon in week 1 so we can efficiently tackle the project piece by piece and link each part together cleanly through our well-thought out implementation roadmap. If we are ahead of schedule, then we will make progress towards some of our extra features. We'll communicate over text and meet up some days, working and deliberating together to make our project cohesive.
+<h3>Week 3: Final Touches + Creating Final Report</h3>
+At this point, having completed all of our planned goals, we’ll use our remaining time to work on stretch goals and compose a polished report. We’ll gather a portfolio of renders and write out our implementations in understandable, clear language.
+
+<h2>Project Resources:</h2><br><br>
+<ul>
+<li>CS184, Summer 2026’s Homework 3 path tracing code as a jumping off point.</li>
+<li>CS184 lecture materials, Material modeling(Fresnel/BRDFs), Texture Mapping, Simulation.</li>
+<li>M. Finch, "Effective Water Simulation from Physical Models," GPU Gems, Ch. 1 — Gerstner waves and analytic normals.</li>
+<li>J. Tessendorf, "Simulating Ocean Water," SIGGRAPH course notes, 2001 — FFT ocean spectrum and Jacobian-based foam.</li>
+<li>Catlike Coding, "Waves" tutorial — step-by-step Gerstner derivation using unity. </li>
+<li>GPU Gems 2, Ch. 18, "Using Vertex Texture Displacement for Realistic Water Rendering" — real-time reflection/refraction techniques.</li>
+<li>TDM, "Seascape," ShaderToy — reference for water lighting composition (sky color, Fresnel blend, sun glitter).</li>
+</ul> 
+<br>
+<h3>Platform & Software:</h3>
+<ul>
+<li>C++ & OpenGL</li>
+<li>Hardware: Team Laptop (integrated GPU sufficient) & instructional machines</li>
+</ul>
+
+	</body>
+</html>
