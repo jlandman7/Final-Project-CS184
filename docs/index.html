@@ -27,8 +27,8 @@
 	</head>
 	<body>
 		<div class="container">
-		<h1>CS184 Spring 2026 Final Project Proposal</h1>
-		<div style="text-align: center;"> Jacob Landman, Tony Li, Howard Yao, Jordan Velasco </div>
+		<h1>CS184 Spring 2026 Final Project</h1>
+		<div style="text-align: center;"> Jacob Landman </div>
 
 		<br>
 
@@ -41,66 +41,74 @@
             <br><br>
         Video:
         <video width="640" height="360" controls>
-        <source src="checkpoint_videos/Final Checkpoint CS184.mp4" type="video/mp4">
+        <source src="video/CS184-Final-Video.mp4" type="video/mp4">
         Your browser does not support the video tag.
         </video>
 
-		<h1>Procedural water rendering and lighting solutions</h1>
+		<h1>Photon mapping and height-field water simulation</h1>
       
-       <br>
-       Summary: Our idea is to simulate a small body of water that is passably realistic. We'll also implement a lighting solution to render it in a visually pleasing way.
+    <br>
+    <h2> Abstract </h2>
+		We see a really amazing visual phenomenon every day and often don't even bat an eyelash. Light streaming through water is a complex and beautiful interaction which poses a significant challenge to mimic using computer graphics techniques. In this project, we designed and created an application from scratch using OpenGL, created a height field simulation of water, and implemented photon mapping for global illumination and caustic highlights. Height field simulation is a method which represents water as a 2d grid of heights, and updates heights based on neighboring heights and the wave equation. Photon mapping is a global illumination method which works in two passes - firing photons from light sources into the scene, and firing rays from pixels into the scene to query the nearby photons. The interplay between these methods makes it a very cool problem with a lot of depth and intrigue, not to mention the cool procedural renders that can come from it!
+	<br>
 
-	    <br>
 
+<h2> Architecture Choices and Approach </h2>
 
-<h2> Problem Description </h2>
-The problem we’re trying to solve is rendering a realistic-seeming body of water. This is challenging because it is a fluid, so both static and dynamic qualities must be taken into account to get an acceptable outcome. We will weigh the pros and cons of different possible implementations like displacement mapping, particle systems, and dynamic mesh updating, then converge and implement one of those solutions. To complement whichever water dynamics approach we take, we’ll implement a lighting model like Blinn-Phong, ray tracing with BSSRDF, or photon mapping depending on the time and engineering constraints.
-<br><br>
-
-<h2> Goals and Deliverables </h2>
-<h3> What we plan to deliver </h3>
-
+While in our planning phase, we chose to break down the whole project into four main pieces.
 <ul>
-<li>Photos & videos of simulated water, which would be artistically pleasing.</li>
-<li>An application which procedurally generates and evolves the water and lights the scene.</li>
-<li>A gamut of parameters to style the scene </li>
+<li>The underlying graphics application </li>
+<li>The static geometry of the scene</li>
+<li>The dynamic geometry of the scene</li>
+<li>The lighting of the scene</li>
 </ul>
 
-<h3> What we hope to deliver </h3>
+<h3>Graphics application</h3>
+First, we put together the graphics application itself, which we did from scratch using a few libraries - OpenGL, GLFW, GLM, GLAD, and stb_image_write. We used these libraries to put together a graphics pipeline which rendered scene geometry using the Blinn-Phong lighting model for debugging at first. We rigged it up to run for multiple frames with great configurability of quality and to output each frame as well as metadata about the run and an mp4 created by splicing the frames together. With this solid framework under our belt, we were in good shape to work on the static geometry of the cornell box and water mesh because of all the debugging conveniences we'd afforded ourselves.
+<br>
 
-<ul>
-<li> Realistic-looking water solution (perhaps modelling foam, spray, …)</li>
-<li> Ray-tracing / photon mapping lighting solution</li>
-<li> Real-time rendering capabilities</li>
-<li> Interactive perturbations (like throwing pebbles or larger rocks)</li>
-</ul>
-
-Out of the stretch goals, we're prioritizing realistic lighting.
+<h3>Static geometry</h3>
+Next, we built the static scene geometry - a simple unit cube with a red left side, green right side acted as our cornell box, and we set up the height field, which would dynamically create a triangle mesh from the height data at each node of the size-configurable grid. We implemented a few types of initial geometry for the height field, generated procedurally. We could either perturb the heights by adding cosine waves of different frequencies, or by adding "gaussian drops" which serve to mimic the ripples that might be created when dropping some small object into the water. With these initial configurations in hand, we were ready to work on the physics of the height field.
 <br><br>
 
-<h2> Schedule </h2>
-<h3>Week 1: Planning</h3>
-During week 1, we will distribute the work and figure out what needs to be done to complete this project. We will research about the art of representing dynamic fluids in computer graphics and converge on an exact stack of implementations to work on. We'll also establish which stretch goals we should go for first, and what substitutions to make if we start running low on time.
-<h3>Week 2: Creating Implementation & Coding</h3>
-We will begin to put our ideas into practice, keeping up with the division of labor decided upon in week 1 so we can efficiently tackle the project piece by piece and link each part together cleanly through our well-thought out implementation roadmap. If we are ahead of schedule, then we will make progress towards some of our extra features. We'll communicate over text and meet up some days, working and deliberating together to make our project cohesive.
-<h3>Week 3: Final Touches + Creating Final Report</h3>
-At this point, having completed all of our planned goals, we’ll use our remaining time to work on stretch goals and compose a polished report. We’ll gather a portfolio of renders and write out our implementations in understandable, clear language.
+<img src="keepers/wpm_2026-08-11_21-28-43/frames/water_sim_full_0005.png" align="middle" width="500px"/>
+<figcaption>Cosine-perturbed height field in Cornell box with Blinn-Phong lighting</figcaption>
+
+<h3>Height field physics</h3>
+To get the height field moving, we defined the wave equation and updated the mesh according to it each frame. In order to maintain numerical stability, we had to dynamically substep the simulation depending on the complexity of the updates. We also had to apply Neumann boundary conditions to make sure water wasn't allowed to leak out of the edges of the container. Having implemented the physical simulation for the height field, and dynamic updating of the mesh from its height values, we were ready to light it using photon mapping.
+<br><br>
+<div align="middle">
+  <table style="width: 100%">
+    <tr align="center">
+      <td>
+		<video width="640" height="360" controls>
+			<source src="keepers/wpm_2026-08-11_21-28-43/water_sim_full.mp4" type="video/mp4">
+			Your browser does not support the video tag.
+		</video>
+		<figcaption>Wave equation updates with a few cosine wave harmonics</figcaption>
+      </td>
+	 	</tr> 
+	  <tr align="center">
+      <td>
+        <video width="640" height="360" controls>
+			<source src="keepers/wpm_2026-08-11_21-34-45/water_sim_full.mp4" type="video/mp4">
+			Your browser does not support the video tag.
+		</video>
+		<figcaption>Obviously non-physical wave equation solution with many harmonics</figcaption>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<h3>Photon mapping</h3>
+Finally, the longest and hardest part of the project - implementing photon mapping. To get clean caustics with this lighting method, we split the photon maps in two - the caustic map and the global illumination map. For the caustic map, we sample a location from the light and a location from the water, then compute the resultant locations of the reflected or refracted photons based on the incident angle and the normal vector of the water at the point of intersection. To find the point of intersection efficiently, we store the updated water mesh each frame, and test for intersection in 2d boxes once the ray passes between the max and min heights. Doing this repeatedly, we collect a map where photons tend to land to query for the caustics of our ray-traced lighting pass. For the global illumination map, we don't only fire photons at the water, but generally around the scene, and we use Russian Roulette termination to allow them to disperse illumination around the scene through multiple bounces and estimate the rendering equation in an unbiased way. For the second pass, we fire rays from the camera into the scene and query the photon maps in a small radius around the point of intersection. Since the water has dynamic geometry, the lighting changes every frame and caustics are concentrated in certain places, giving the photon mapped render a life of its own!
+
 
 <h2>Project Resources:</h2><br><br>
 <ul>
-<li>CS184, Summer 2026’s Homework 3 path tracing code as a jumping off point.</li>
-<li>CS184 lecture materials, Material modeling(Fresnel/BRDFs), Texture Mapping, Simulation.</li>
-<li>M. Finch, "Effective Water Simulation from Physical Models," GPU Gems, Ch. 1 — Gerstner waves and analytic normals.</li>
-<li>J. Tessendorf, "Simulating Ocean Water," SIGGRAPH course notes, 2001 — FFT ocean spectrum and Jacobian-based foam.</li>
-<li>Catlike Coding, "Waves" tutorial — step-by-step Gerstner derivation using unity. </li>
-<li>GPU Gems 2, Ch. 18, "Using Vertex Texture Displacement for Realistic Water Rendering" — real-time reflection/refraction techniques.</li>
-<li>TDM, "Seascape," ShaderToy — reference for water lighting composition (sky color, Fresnel blend, sun glitter).</li>
-</ul> 
-<br>
-<h3>Platform & Software:</h3>
-<ul>
-<li>C++ & OpenGL</li>
-<li>Hardware: Team Laptop (integrated GPU sufficient) & instructional machines</li>
+<li>CS184 lecture materials</li>
+<li>https://rahuldesai1.github.io/cs184-sp21-underwater-final/</li>
+<li>https://graphics.stanford.edu/courses/cs348b-00/course8.pdf</li>
 </ul>
 
 	</body>

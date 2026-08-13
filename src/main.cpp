@@ -96,6 +96,8 @@ int main(int argc, char* argv[]) {
         std::vector<uint8_t> ldr_frame;
 
         for (int frame = 0; frame < config.frame_count; ++frame) {
+            
+
             if (window.should_close()) break;
             
             // 1. Update physics
@@ -107,6 +109,7 @@ int main(int argc, char* argv[]) {
             if (config.debug.lighting_mode == LightingMode::PhotonMapping) {
                 // Re-build photon map every frame because water geometry changed
                 photon_mapper.generate_caustic_map(config.photons.photon_count, cpu_raytracer);
+                photon_mapper.generate_gi_map(config.photons.photon_count / 2, cpu_raytracer);
                 
                 // Extract camera data from your existing setup
                 glm::vec3 camera_pos = renderer.get_camera_position();
@@ -116,7 +119,7 @@ int main(int argc, char* argv[]) {
                 // Raytrace directly into the CPU buffer
                 cpu_raytracer.render_frame(hdr_buffer, config.render.output_width, config.render.output_height, 
                                         camera_pos, view_mat, proj_mat, photon_mapper);
-                
+
                 // Push the CPU buffer to the GPU for live window visualization
                 if (visualize) {
                     renderer.upload_cpu_buffer(hdr_buffer);
@@ -126,8 +129,8 @@ int main(int argc, char* argv[]) {
                 // Fallback to OpenGL rasterized rendering (Blinn-Phong)
                 renderer.render_frame(frame);
                 renderer.read_color_to_cpu(hdr_buffer);
-            }
-            
+            }          
+
             // 3. Post processing and output
             ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
                                                     config.render.output_width,
@@ -141,6 +144,7 @@ int main(int argc, char* argv[]) {
                 ImageOutput::write_png(png_path.str(), ldr_frame, 
                                     config.render.output_width, config.render.output_height);
             }
+            
                 // window
             if (visualize) {
                 int fb_w, fb_h;

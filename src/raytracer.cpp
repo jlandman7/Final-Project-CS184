@@ -5,6 +5,20 @@
 #include <algorithm>
 #include <iostream>
 
+// ACES tone mapping with sRGB gamma correction
+static glm::vec3 tone_map_aces(glm::vec3 color) {
+    // 0.45f balances the bright 0.55f exposure and the darker 0.38f run
+    color *= 0.45f; 
+    float a = 2.51f, b = 0.03f, c = 2.43f, d = 0.59f, e = 0.14f;
+    glm::vec3 mapped = (color * (a * color + b)) / (color * (c * color + d) + e);
+    
+    // Gentle 1.08x saturation boost gives wall colors body without neon glow
+    float luminance = glm::dot(mapped, glm::vec3(0.2126f, 0.7152f, 0.0722f));
+    mapped = glm::mix(glm::vec3(luminance), mapped, 1.08f); 
+    
+    return glm::pow(glm::clamp(mapped, 0.0f, 1.0f), glm::vec3(1.0f / 2.2f));
+}
+
 static bool refract_ray(const glm::vec3& I, const glm::vec3& N, float eta, glm::vec3& refracted) {
     float cos_i = -glm::dot(N, I);
     float sin2_t = eta * eta * (1.0f - cos_i * cos_i);
@@ -30,7 +44,6 @@ void Raytracer::setup_camera(const glm::mat4& view_mat, const glm::mat4& proj_ma
 void Raytracer::sync_geometry(const CornellBox& box, const WaterMesh& water) {
     (void)water; // Silences unused parameter warning
     
-    // Build Static BVH for Cornell Box ONCE
     if (!bvh_built) {
         static_triangles.clear();
         const Mesh& box_mesh = box.get_mesh();
@@ -50,6 +63,28 @@ void Raytracer::sync_geometry(const CornellBox& box, const WaterMesh& water) {
         build_bvh();
         bvh_built = true;
     }
+
+    // Allocate cache once
+    if (water_height_cache.empty()) {
+        water_height_cache.resize(128 * 128);
+    }
+
+    // Cache the entire grid and calculate bounds in one pass
+    water_y_min = 1000.0f;
+    water_y_max = -1000.0f;
+    
+    for (int z = 0; z < 128; ++z) {
+        for (int x = 0; x < 128; ++x) {
+            float h = water_sim.get_height(x, z);
+            water_height_cache[z * 128 + x] = h;
+            
+            water_y_min = std::min(water_y_min, h);
+            water_y_max = std::max(water_y_max, h);
+        }
+    }
+    
+    water_y_min -= 0.01f;
+    water_y_max += 0.01f;
 }
 
 void Raytracer::build_bvh() {
@@ -175,36 +210,32 @@ void Raytracer::intersect_bvh(const glm::vec3& ray_orig, const glm::vec3& ray_di
     }
 }
 
-// Phase 1: Smooth Bilinear Surface Sampler
 float Raytracer::get_height_bilinear(float wx, float wz) const {
     float domain = water_sim.get_domain_size();
     
-    // Clamp world position to water boundary margins
     wx = std::clamp(wx, 0.001f, domain - 0.001f);
     wz = std::clamp(wz, 0.001f, domain - 0.001f);
 
-    int res_x = 128; // Grid resolution
+    int res_x = 128; 
     int res_z = 128;
 
-    // Convert world float to continuous grid space
     float gx = (wx / domain) * (res_x - 1);
     float gz = (wz / domain) * (res_z - 1);
 
-    int x0 = static_cast<int>(std::floor(gx));
-    int z0 = static_cast<int>(std::floor(gz));
+    int x0 = static_cast<int>(gx);
+    int z0 = static_cast<int>(gz);
     int x1 = std::min(x0 + 1, res_x - 1);
     int z1 = std::min(z0 + 1, res_z - 1);
 
     float u = gx - x0;
     float v = gz - z0;
 
-    // Sample 4 grid points
-    float h00 = water_sim.get_height(x0, z0);
-    float h10 = water_sim.get_height(x1, z0);
-    float h01 = water_sim.get_height(x0, z1);
-    float h11 = water_sim.get_height(x1, z1);
+    // Direct memory lookups instead of dynamic harmonic evaluation
+    float h00 = water_height_cache[z0 * 128 + x0];
+    float h10 = water_height_cache[z0 * 128 + x1];
+    float h01 = water_height_cache[z1 * 128 + x0];
+    float h11 = water_height_cache[z1 * 128 + x1];
 
-    // Bilinear blend formula
     return (1.0f - u) * (1.0f - v) * h00 +
            u * (1.0f - v) * h10 +
            (1.0f - u) * v * h01 +
@@ -217,22 +248,11 @@ bool Raytracer::intersect_water_dda(const glm::vec3& origin, const glm::vec3& di
 
     float domain = water_sim.get_domain_size();
 
-    // 1. Scan grid min/max heights
-    float y_min = 0.4f, y_max = 0.4f;
-    int res_x = 128, res_z = 128;
-    for (int x = 0; x < res_x; x += 8) {
-        for (int z = 0; z < res_z; z += 8) {
-            float h = water_sim.get_height(x, z);
-            y_min = std::min(y_min, h);
-            y_max = std::max(y_max, h);
-        }
-    }
-    y_min -= 0.01f;
-    y_max += 0.01f;
+    // 1. Intersect ray with full 3D AABB bounding box using CACHED bounds
+    glm::vec3 box_min(0.0f, water_y_min, 0.0f);
+    glm::vec3 box_max(domain, water_y_max, domain);
 
-    // 2. Intersect ray with full 3D AABB bounding box of the water domain
-    glm::vec3 box_min(0.0f, y_min, 0.0f);
-    glm::vec3 box_max(domain, y_max, domain);
+    int res_x = 128;
 
     glm::vec3 inv_dir = 1.0f / dir;
     glm::vec3 t0 = (box_min - origin) * inv_dir;
@@ -303,68 +323,95 @@ bool Raytracer::intersect_water_dda(const glm::vec3& origin, const glm::vec3& di
     return true;
 }
 
-glm::vec3 Raytracer::compute_caustic_intensity(const glm::vec3& hit_pos, 
-                                               const PhotonMapper& photon_mapper) const {
-    const float search_radius = 0.007f; // 3.5cm search disc
-    auto near_photons = photon_mapper.find_near_photons(hit_pos, search_radius);
-
-    if (near_photons.empty()) {
-        return glm::vec3(0.0f);
-    }
-
-    glm::vec3 accumulated_flux(0.0f);
-    for (const auto& p : near_photons) {
-        float dist = glm::distance(hit_pos, p.position);
-        float weight = 1.0f - (dist / search_radius); // Cone weight
-        accumulated_flux += p.power * std::max(0.0f, weight);
-    }
-
-    const float pi = 3.14159265f;
-    float area = pi * search_radius * search_radius;
-    return (accumulated_flux * 1.5f) / area;
-}
-
 glm::vec3 Raytracer::trace_ray(const glm::vec3& origin, const glm::vec3& dir, 
                                const PhotonMapper& photon_mapper, int depth) const {
+    // 1. Base Case: Max Bounces
     if (depth > 4) return glm::vec3(0.0f);
 
     glm::vec3 water_hit_pos, water_hit_normal;
     
-    // Path A: Ray hits water surface -> refract to floor/walls
+    // 2. Path A: Ray strikes the dynamic water surface
     if (intersect_water_dda(origin, dir, water_hit_pos, water_hit_normal)) {
-        float eta = 1.0f / 1.333f;
+        float n1 = 1.0f;    // Air
+        float n2 = 1.333f;  // Water
+        float eta = n1 / n2;
+
         glm::vec3 N = water_hit_normal;
-        if (glm::dot(dir, N) > 0.0f) N = -N;
+        float cos_i = -glm::dot(dir, N);
 
-        glm::vec3 refr_dir;
-        if (refract_ray(dir, N, eta, refr_dir)) {
-            HitRecord floor_rec;
-            glm::vec3 inv_dir = 1.0f / refr_dir;
-            intersect_bvh(water_hit_pos + refr_dir * 0.001f, refr_dir, inv_dir, 0, floor_rec);
-
-            if (floor_rec.hit) {
-                glm::vec3 ambient = floor_rec.color * 0.25f; 
-                glm::vec3 caustics = compute_caustic_intensity(floor_rec.position, photon_mapper);
-                glm::vec3 water_tint(0.85f, 0.95f, 1.0f);
-                
-                return (ambient + caustics * floor_rec.color) * water_tint;
-            }
+        // Handle rays hitting the surface from underneath (Total Internal Reflection setup)
+        if (cos_i < 0.0f) {
+            N = -N;
+            cos_i = -glm::dot(dir, N);
+            eta = n2 / n1; 
         }
+
+        // Offset along surface normal N to prevent self-intersection acne at shallow angles
+        glm::vec3 refl_dir = glm::reflect(dir, N);
+        glm::vec3 refl_orig = water_hit_pos + N * 0.002f; 
+        glm::vec3 reflection_color = trace_ray(refl_orig, refl_dir, photon_mapper, depth + 1);
+
+        glm::vec3 refraction_color(0.0f);
+        float F = 1.0f; // Default to 100% reflection (TIR)
+
+        float sin2_t = eta * eta * (1.0f - cos_i * cos_i);
+        
+        // Calculate Refraction (If not Total Internal Reflection)
+        if (sin2_t <= 1.0f) {
+            float cos_t = std::sqrt(1.0f - sin2_t);
+            glm::vec3 refr_dir = eta * dir + (eta * cos_i - cos_t) * N;
+            
+            // Push refracted ray inside along -N to clear the water boundary
+            glm::vec3 refr_orig = water_hit_pos - N * 0.002f;
+            refraction_color = trace_ray(refr_orig, refr_dir, photon_mapper, depth + 1);
+
+            // Approximate underwater path distance down to the floor
+            float underwater_depth = std::max(0.001f, water_hit_pos.y - 0.0f);
+            float dist = underwater_depth / std::max(0.1f, std::abs(refr_dir.y));
+
+            // Beer-Lambert absorption (absorbs red light much faster than blue/green)
+            // Balanced absorption vector: realistic aquatic tint without heavy darkening
+            glm::vec3 sigma_a(1.0f, 0.20f, 0.03f); 
+            glm::vec3 attenuation = glm::exp(-sigma_a * dist);
+            refraction_color *= attenuation;
+
+            // Schlick's Approximation for Fresnel
+            float R0 = (n1 - n2) / (n1 + n2);
+            R0 = R0 * R0;
+            float one_minus_cos = 1.0f - cos_i;
+            F = R0 + (1.0f - R0) * (one_minus_cos * one_minus_cos * one_minus_cos * one_minus_cos * one_minus_cos);
+        }
+
+        // Blend reflection and refraction based on viewing angle
+        return (F * reflection_color) + ((1.0f - F) * refraction_color);
     }
 
-    // Path B: Ray misses water or hits open box geometry directly
+    // 3. Path B: Ray misses water or is a secondary ray hitting box geometry
     HitRecord scene_rec;
     glm::vec3 inv_dir = 1.0f / dir;
     intersect_bvh(origin, dir, inv_dir, 0, scene_rec);
 
     if (scene_rec.hit) {
-        glm::vec3 ambient = scene_rec.color * 0.25f;
-        glm::vec3 caustics = compute_caustic_intensity(scene_rec.position, photon_mapper);
+        glm::vec3 light_color = glm::vec3(0.4f, 0.90f, 1.0f);
+        
+        // Expanded search radius to 0.038f so caustics form crisp webs on vertical walls
+        glm::vec3 caustics = photon_mapper.estimate_caustic_intensity(scene_rec.position, 0.038f);
+        glm::vec3 gi = photon_mapper.estimate_gi_intensity(scene_rec.position, 0.12f);
 
-        return ambient + caustics * scene_rec.color;
+        // Firefly filter clamp
+        caustics = glm::min(caustics, glm::vec3(5.0f));
+        gi = glm::min(gi, glm::vec3(1.2f));
+
+        float direct_light = std::max(0.0f, glm::dot(scene_rec.normal, glm::vec3(0.0f, 1.0f, 0.0f)));
+        glm::vec3 direct = light_color * glm::vec3(direct_light * 0.15f); 
+
+        return (direct + gi + caustics) * scene_rec.color;
     }
 
-    return glm::vec3(0.0f); // Sky/void
+    // 4. Sky / Background Fallback
+    return glm::vec3(0.0f,0.0f,0.0f);
+    // float t = 0.5f * (dir.y + 1.0f);
+    // return (1.0f - t) * glm::vec3(1.0f, 1.0f, 1.0f) + t * glm::vec3(0.5f, 0.7f, 1.0f);
 }
 
 void Raytracer::render_frame(std::vector<glm::vec4>& hdr_buffer, int width, int height,
@@ -373,7 +420,7 @@ void Raytracer::render_frame(std::vector<glm::vec4>& hdr_buffer, int width, int 
     glm::mat4 inv_view = glm::inverse(view_mat);
     glm::mat4 inv_proj = glm::inverse(proj_mat);
 
-    #pragma omp parallel for collapse(2) schedule(dynamic)
+    #pragma omp parallel for collapse(2) schedule(dynamic, 256)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
             float u = (2.0f * (x + 0.5f) / width) - 1.0f;
@@ -385,7 +432,7 @@ void Raytracer::render_frame(std::vector<glm::vec4>& hdr_buffer, int width, int 
 
             glm::vec3 pixel_color = trace_ray(camera_pos, ray_dir, photon_mapper);
 
-            hdr_buffer[y * width + x] = glm::vec4(pixel_color, 1.0f);
+            hdr_buffer[y * width + x] = glm::vec4(tone_map_aces(pixel_color), 1.0f);
         }
     }
 }

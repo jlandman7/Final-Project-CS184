@@ -1,0 +1,14 @@
+=== Water Simulator Run Metadata ===
+Timestamp: Wed Aug 12 21:14:35 2026
+
+Configuration:
+  Input mode: sim
+  Output modes: full 
+  Frames: 300
+  Resolution: 480x360
+  Output FPS: 30
+  Photon count: 50000
+
+Render Statistics:
+  Elapsed time: 83.866s
+  Time per frame: 0.279553s

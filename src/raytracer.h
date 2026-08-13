@@ -74,8 +74,9 @@ private:
     
     float get_height_bilinear(float wx, float wz) const;
 
-    glm::vec3 compute_caustic_intensity(const glm::vec3& hit_pos, 
-                                        const PhotonMapper& photon_mapper) const;
+    float water_y_min = 0.0f;
+    float water_y_max = 1.0f;
+    std::vector<float> water_height_cache;
 
     void build_bvh();
     void update_node_bounds(int node_idx);

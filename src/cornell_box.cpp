@@ -59,7 +59,7 @@ void CornellBox::generate_procedural() {
     add_quad(glm::vec3(1, 0, 0), glm::vec3(1, 0, 1), glm::vec3(1, 1, 1), glm::vec3(1, 1, 0), glm::vec3(-1, 0, 0), green);
 
     // Ceiling Light Patch (y = 0.99) -> Normal points DOWN (-Y)
-    float l_min = 0.35f, l_max = 0.65f;
+    float l_min = 0.05f, l_max = 0.95f;
     add_quad(glm::vec3(l_min, 0.99f, l_min), glm::vec3(l_max, 0.99f, l_min), 
              glm::vec3(l_max, 0.99f, l_max), glm::vec3(l_min, 0.99f, l_max), 
              glm::vec3(0, -1, 0), light_color);
