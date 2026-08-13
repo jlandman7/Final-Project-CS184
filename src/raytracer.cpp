@@ -303,75 +303,89 @@ bool Raytracer::intersect_water_dda(const glm::vec3& origin, const glm::vec3& di
     return true;
 }
 
+glm::vec3 Raytracer::compute_caustic_intensity(const glm::vec3& hit_pos, 
+                                               const PhotonMapper& photon_mapper) const {
+    const float search_radius = 0.007f; // 3.5cm search disc
+    auto near_photons = photon_mapper.find_near_photons(hit_pos, search_radius);
+
+    if (near_photons.empty()) {
+        return glm::vec3(0.0f);
+    }
+
+    glm::vec3 accumulated_flux(0.0f);
+    for (const auto& p : near_photons) {
+        float dist = glm::distance(hit_pos, p.position);
+        float weight = 1.0f - (dist / search_radius); // Cone weight
+        accumulated_flux += p.power * std::max(0.0f, weight);
+    }
+
+    const float pi = 3.14159265f;
+    float area = pi * search_radius * search_radius;
+    return (accumulated_flux * 1.5f) / area;
+}
+
+glm::vec3 Raytracer::trace_ray(const glm::vec3& origin, const glm::vec3& dir, 
+                               const PhotonMapper& photon_mapper, int depth) const {
+    if (depth > 4) return glm::vec3(0.0f);
+
+    glm::vec3 water_hit_pos, water_hit_normal;
+    
+    // Path A: Ray hits water surface -> refract to floor/walls
+    if (intersect_water_dda(origin, dir, water_hit_pos, water_hit_normal)) {
+        float eta = 1.0f / 1.333f;
+        glm::vec3 N = water_hit_normal;
+        if (glm::dot(dir, N) > 0.0f) N = -N;
+
+        glm::vec3 refr_dir;
+        if (refract_ray(dir, N, eta, refr_dir)) {
+            HitRecord floor_rec;
+            glm::vec3 inv_dir = 1.0f / refr_dir;
+            intersect_bvh(water_hit_pos + refr_dir * 0.001f, refr_dir, inv_dir, 0, floor_rec);
+
+            if (floor_rec.hit) {
+                glm::vec3 ambient = floor_rec.color * 0.25f; 
+                glm::vec3 caustics = compute_caustic_intensity(floor_rec.position, photon_mapper);
+                glm::vec3 water_tint(0.85f, 0.95f, 1.0f);
+                
+                return (ambient + caustics * floor_rec.color) * water_tint;
+            }
+        }
+    }
+
+    // Path B: Ray misses water or hits open box geometry directly
+    HitRecord scene_rec;
+    glm::vec3 inv_dir = 1.0f / dir;
+    intersect_bvh(origin, dir, inv_dir, 0, scene_rec);
+
+    if (scene_rec.hit) {
+        glm::vec3 ambient = scene_rec.color * 0.25f;
+        glm::vec3 caustics = compute_caustic_intensity(scene_rec.position, photon_mapper);
+
+        return ambient + caustics * scene_rec.color;
+    }
+
+    return glm::vec3(0.0f); // Sky/void
+}
+
 void Raytracer::render_frame(std::vector<glm::vec4>& hdr_buffer, int width, int height,
                             const glm::vec3& camera_pos, const glm::mat4& view_mat, 
                             const glm::mat4& proj_mat, const PhotonMapper& photon_mapper) {
-    (void)view_mat;
-    (void)proj_mat;
-
-    float eta_air_to_water = 1.0f / 1.333f;
-    float search_radius = 0.02f; 
-    float search_radius_sq = search_radius * search_radius;
-    float search_area = M_PI * search_radius_sq * 0.5f;
+    glm::mat4 inv_view = glm::inverse(view_mat);
+    glm::mat4 inv_proj = glm::inverse(proj_mat);
 
     #pragma omp parallel for collapse(2) schedule(dynamic)
     for (int y = 0; y < height; ++y) {
         for (int x = 0; x < width; ++x) {
-            // Standard NDC mapping: y = 0 (top row) -> v = +1.0 (ceiling)
             float u = (2.0f * (x + 0.5f) / width) - 1.0f;
-            float v = (2.0f * (y + 0.5f) / height) - 1.0f; // If still inverted, change to: 1.0f - (2.0f * (y + 0.5f) / height);
+            float v = (2.0f * (y + 0.5f) / height) - 1.0f;
 
-            // Unproject ray into world space
             glm::vec4 target = inv_proj * glm::vec4(u, v, 1.0f, 1.0f);
             glm::vec3 eye_dir = glm::normalize(glm::vec3(target) / target.w);
             glm::vec3 ray_dir = glm::normalize(glm::vec3(inv_view * glm::vec4(eye_dir, 0.0f)));
 
-            glm::vec3 water_hit_pos, water_hit_normal;
-            glm::vec3 final_color(0.0f);
+            glm::vec3 pixel_color = trace_ray(camera_pos, ray_dir, photon_mapper);
 
-            if (intersect_water_dda(camera_pos, ray_dir, water_hit_pos, water_hit_normal)) {
-                // Ensure normal faces against incoming camera ray
-                glm::vec3 N = water_hit_normal;
-                if (glm::dot(ray_dir, N) > 0.0f) N = -N;
-
-                glm::vec3 refr_dir;
-                if (refract_ray(ray_dir, N, eta_air_to_water, refr_dir)) {
-                    HitRecord floor_hit;
-                    glm::vec3 inv_refr_dir = 1.0f / refr_dir;
-                    
-                    // Trace down to floor/walls below water level
-                    intersect_bvh(water_hit_pos + refr_dir * 0.001f, refr_dir, inv_refr_dir, 0, floor_hit);
-
-                    if (floor_hit.hit) {
-                        auto near_photons = photon_mapper.find_near_photons(floor_hit.position, search_radius);
-                        glm::vec3 accumulated_power(0.0f);
-
-                        for (const auto& p : near_photons) {
-                            glm::vec3 diff = p.position - floor_hit.position;
-                            float dist_sq = glm::dot(diff, diff);
-                            float weight = 1.0f - (dist_sq / search_radius_sq);
-                            accumulated_power += p.power * std::max(0.0f, weight);
-                        }
-
-                        glm::vec3 density = accumulated_power / search_area;
-                        glm::vec3 water_tint(0.85f, 0.95f, 1.0f);
-                        
-                        // Base ambient = 0.8f so unlit underwater floor matches scene brightness
-                        final_color = floor_hit.color * water_tint * (0.8f + density);
-                    }
-                }
-            } else {
-                // Primary ray hits walls/ceiling directly
-                HitRecord box_hit;
-                glm::vec3 inv_dir = 1.0f / ray_dir;
-                intersect_bvh(camera_pos, ray_dir, inv_dir, 0, box_hit);
-                if (box_hit.hit) {
-                    final_color = box_hit.color;
-                }
-            }
-
-            // Direct index write (y = 0 is top row in image memory)
-            hdr_buffer[y * width + x] = glm::vec4(final_color, 1.0f);
+            hdr_buffer[y * width + x] = glm::vec4(pixel_color, 1.0f);
         }
     }
 }

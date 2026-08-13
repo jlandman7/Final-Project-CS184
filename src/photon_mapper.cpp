@@ -22,9 +22,18 @@ void PhotonMapper::generate_caustic_map(int photon_count, const Raytracer& raytr
 
         #pragma omp for schedule(dynamic)
         for (int i = 0; i < photon_count; ++i) {
-            glm::vec2 disk = glm::diskRand(0.35f);
-            glm::vec3 dir = glm::normalize(glm::vec3(disk.x, -1.0f, disk.y));
-            glm::vec3 light_pos(0.5f, 0.95f, 0.5f);
+            // Distribute photon origins randomly across the entire ceiling
+            glm::vec3 light_pos(
+                glm::linearRand(0.001f, 0.999f), // X bounds
+                0.98f,                           // Ceiling height
+                glm::linearRand(0.001f, 0.999f)  // Z bounds
+            );
+
+            // Shoot them straight down (like midday sun) or with a tiny angular spread
+            glm::vec3 dir(0.0f, -1.0f, 0.0f); 
+
+            // Optional: Give it a slight angle so the webs sweep across the floor
+            //glm::vec3 dir = glm::normalize(glm::vec3(0.1f, -1.0f, 0.05f));
 
             glm::vec3 water_hit_pos, water_hit_normal;
             if (!raytracer.intersect_water_dda(light_pos, dir, water_hit_pos, water_hit_normal)) continue;
@@ -48,7 +57,7 @@ void PhotonMapper::generate_caustic_map(int photon_count, const Raytracer& raytr
                 Photon p;
                 p.position = rec.position;
                 p.incident_dir = refracted_dir;
-                p.power = glm::vec3(40.0f / float(photon_count));
+                p.power = glm::vec3(12.0f / float(photon_count));
                 thread_photons[thread_id].push_back(p);
             }
         }

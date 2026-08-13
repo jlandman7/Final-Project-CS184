@@ -56,6 +56,9 @@ public:
                        const glm::vec3& camera_pos, const glm::mat4& view_mat, 
                        const glm::mat4& proj_mat, const PhotonMapper& photon_mapper);
 
+    glm::vec3 trace_ray(const glm::vec3& origin, const glm::vec3& dir, 
+                        const PhotonMapper& photon_mapper, int depth = 0) const;
+
 private:
     const CornellBox& cornell_box;
     const WaterSimulation& water_sim;
@@ -70,6 +73,9 @@ private:
     glm::mat4 inv_proj;
     
     float get_height_bilinear(float wx, float wz) const;
+
+    glm::vec3 compute_caustic_intensity(const glm::vec3& hit_pos, 
+                                        const PhotonMapper& photon_mapper) const;
 
     void build_bvh();
     void update_node_bounds(int node_idx);
