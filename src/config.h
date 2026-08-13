@@ -4,6 +4,7 @@
 #include <chrono>
 #include <iomanip>
 #include <sstream>
+#include <filesystem>
 #include "water_simulation.h"
 
 // Helper to generate timestamped output directory
@@ -28,6 +29,11 @@ enum class OutputMode {
     Full        = 1 << 0,   // Photon-mapped render
     Height      = 1 << 1,   // Height field visualization
     Photons     = 1 << 2    // Photon distribution visualization
+};
+
+enum class LightingMode {
+    BlinnPhong,
+    PhotonMapping
 };
 
 // Window: which visualization to display (if any)
@@ -62,6 +68,7 @@ struct VideoOutputConfig {
 
 struct DebugConfig {
     WindowVisualization window_mode;   // What to show in window (None = no window)
+    LightingMode lighting_mode;
     bool verbose_logging;
 };
 
@@ -74,6 +81,7 @@ struct AppConfig {
     std::string dae_file;              // Optional; empty = default scene
     std::string pre_simulated_cache;   // Only used if input_mode == PreSimulated
     
+    LightingMode lighting;
     WaterSimulationConfig water;
     SimulationConfig sim;
     PhotonMappingConfig photons;

@@ -4,8 +4,9 @@
 #include <glm/glm.hpp>
 
 enum class WaterInitializationMode {
-    CosineWaves,
-    FourierBessel
+    Cosine,
+    Directional,
+    Gaussian_Drops
 };
 
 struct WaterSimulationConfig {
@@ -54,7 +55,8 @@ private:
 
     // Initialization helpers
     void initialize_cosine_waves();
-    void initialize_fourier_bessel();
+    void initialize_directional_waves();
+    void initialize_gaussian_drops();
 
     // Wave equation solver
     void update_heights();

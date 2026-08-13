@@ -61,6 +61,12 @@ namespace {
         if (lower == "photons") return WindowVisualization::Photons;
         throw std::runtime_error("Unknown window mode: " + arg);
     }
+
+    LightingMode parse_lighting_mode(const std::string& str) {
+        std::string lower = to_lower(str);
+        if (str == "blinn-phong") return LightingMode::BlinnPhong;
+        if (str == "photon-mapping") return LightingMode::PhotonMapping;
+    }
 }
 
 // Preset defaults
@@ -78,6 +84,7 @@ AppConfig get_preset_defaults(PresetQuality preset) {
     config.sim.heightfield_resolution = 256;
     config.video.save_png_sequence = false;
     config.debug.window_mode = WindowVisualization::None;
+    config.debug.lighting_mode = LightingMode::PhotonMapping;
     config.debug.verbose_logging = false;
     config.frame_count = 300;
     config.water.grid_resolution = 128;
@@ -86,7 +93,7 @@ AppConfig get_preset_defaults(PresetQuality preset) {
     config.water.harmonic_count = 5;
     config.water.domain_size = 1.0f;
     config.water.simulation_timestep = 0.002f; // Safe step size below CFL limit
-    config.water.init_mode = WaterInitializationMode::CosineWaves;
+    config.water.init_mode = WaterInitializationMode::Cosine;
 
     if (preset == PresetQuality::Preview) {
         config.photons.photon_count = 10000;
@@ -181,6 +188,9 @@ AppConfig parse_cli(int argc, char* argv[]) {
         else if (arg == "--window" && i + 1 < argc) {
             config.debug.window_mode = parse_window_mode(argv[++i]);
         }
+        else if (arg == "--lighting" && i + 1 < argc) {
+            config.debug.lighting_mode = parse_lighting_mode(argv[++i]);
+        }
         else if (arg == "--verbose") {
             config.debug.verbose_logging = true;
         }
@@ -198,8 +208,9 @@ AppConfig parse_cli(int argc, char* argv[]) {
         }
         else if (arg == "--water-init" && i + 1 < argc) {
             std::string mode_str = to_lower(argv[++i]);
-            config.water.init_mode = (mode_str == "fourier-bessel") ? 
-            WaterInitializationMode::FourierBessel : WaterInitializationMode::CosineWaves;
+            if (mode_str == "cosine") config.water.init_mode = WaterInitializationMode::Cosine;
+            else if (mode_str == "directional") config.water.init_mode = WaterInitializationMode::Directional;
+            else if (mode_str == "gaussian_drops") config.water.init_mode = WaterInitializationMode::Gaussian_Drops;
         }
         else {
             throw std::runtime_error("Unknown argument: " + arg);
@@ -219,7 +230,9 @@ AppConfig parse_cli(int argc, char* argv[]) {
     if (config.input_mode == InputMode::PreSimulated && config.pre_simulated_cache.empty()) {
         throw std::runtime_error("--cache-dir is required when using --input pre-simulated");
     }
-
+    if (!std::filesystem::exists(config.video.output_directory)) {
+            throw std::runtime_error("Output directory does not exist: " + config.video.output_directory);
+    }
     if (config.debug.verbose_logging) {
         config.print();
     }

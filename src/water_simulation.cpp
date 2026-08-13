@@ -40,11 +40,14 @@ WaterSimulation::~WaterSimulation() {
 
 void WaterSimulation::initialize() {
     switch (config.init_mode) {
-        case WaterInitializationMode::CosineWaves:
+        case WaterInitializationMode::Cosine:
             initialize_cosine_waves();
             break;
-        case WaterInitializationMode::FourierBessel:
-            initialize_fourier_bessel();
+        case WaterInitializationMode::Directional:
+            initialize_directional_waves();
+            break;
+        case WaterInitializationMode::Gaussian_Drops:
+            initialize_gaussian_drops();
             break;
     }
 
@@ -79,46 +82,36 @@ void WaterSimulation::initialize_cosine_waves() {
     }
 }
 
-void WaterSimulation::initialize_fourier_bessel() {
-    // Fourier-Bessel: radially symmetric modes using Bessel J_0
+void WaterSimulation::initialize_directional_waves() {
     float base_height = 0.4f;
-    float perturbation = 0.05f;
-
-    float center_x = domain_size / 2.0f;
-    float center_y = domain_size / 2.0f;
     float dx = domain_size / (resolution - 1);
-    float max_radius = domain_size / 2.0f;
+
+    std::srand(12345); 
+
+    // Define a dominant wind direction and a max spread to keep waves cohesive
+    float dominant_angle = M_PI / 4.0f; 
+    float angle_spread = M_PI / 3.0f; 
 
     for (int y = 0; y < resolution; ++y) {
         for (int x = 0; x < resolution; ++x) {
             float px = x * dx;
             float py = y * dx;
-            float r = std::sqrt((px - center_x) * (px - center_x) + 
-                               (py - center_y) * (py - center_y));
-
             float height = base_height;
 
-            // Superpose Bessel modes
-            // J_0(k*r) where k is chosen to vanish at boundary
-            for (int m = 1; m <= harmonic_count; ++m) {
-                // First m zeros of J_0 are approximately: 2.405, 5.520, 8.654, ...
-                // Simplified: use k_m = m * pi / max_radius
-                float k = m * M_PI / max_radius;
-                float arg = k * r;
-
-                // Approximate J_0 using series (for small arg)
-                // Full implementation would use gsl_sf_bessel_J0
-                // For now, use a simple approximation
-                float bessel_val;
-                if (arg < 8.0f) {
-                    // Truncated series approximation of J_0
-                    bessel_val = 1.0f - (arg*arg)/4.0f + (arg*arg*arg*arg)/64.0f;
-                } else {
-                    bessel_val = std::sqrt(2.0f / (M_PI * arg)) * std::cos(arg - M_PI/4.0f);
-                }
-
-                float amplitude = perturbation / m;
-                height += amplitude * bessel_val;
+            for (int k = 1; k <= harmonic_count; ++k) {
+                float phase = (std::rand() / (float)RAND_MAX) * 2.0f * M_PI;
+                
+                // Cluster the wave directions around the dominant angle
+                float angle_offset = ((std::rand() / (float)RAND_MAX) * 2.0f - 1.0f) * angle_spread;
+                float current_angle = dominant_angle + angle_offset;
+                glm::vec2 direction(std::cos(current_angle), std::sin(current_angle));
+                
+                // Scale frequency slower, and decay amplitude exponentially (k^2)
+                float freq = (1.0f + k * 0.5f) * 2.0f; 
+                float amplitude = 0.06f / (pow(k, 20)); 
+                
+                float dot_val = (px * direction.x + py * direction.y);
+                height += amplitude * std::cos(freq * dot_val + phase);
             }
 
             heights[index(x, y)] = height;
@@ -126,30 +119,95 @@ void WaterSimulation::initialize_fourier_bessel() {
     }
 }
 
-void WaterSimulation::step() {
-    float c_sq_dt_sq = wave_speed * wave_speed * dt * dt;
-    std::vector<float> heights_next(resolution * resolution);
+void WaterSimulation::initialize_gaussian_drops() {
+    float base_height = 0.4f;
+    float dx = domain_size / (resolution - 1);
+    
+    std::fill(heights.begin(), heights.end(), base_height);
+    std::srand(54321); 
 
-    for (int y = 0; y < resolution; ++y) {
-        for (int x = 0; x < resolution; ++x) {
-            int idx = index(x, y);
+    // Generate a drop for every harmonic requested
+    for (int k = 0; k < harmonic_count; ++k) {
+        // Randomize center (kept slightly away from extreme edges)
+        float cx = ((std::rand() / (float)RAND_MAX) * 0.8f + 0.1f) * domain_size;
+        float cy = ((std::rand() / (float)RAND_MAX) * 0.8f + 0.1f) * domain_size;
+        glm::vec2 drop_center(cx, cy);
+        
+        // Randomize radius between 2% and 15% of the domain size
+        float drop_radius = ((std::rand() / (float)RAND_MAX) * 0.13f + 0.02f) * domain_size;
+        
+        // Randomize magnitude between 0.05 and 0.20
+        float drop_magnitude = ((std::rand() / (float)RAND_MAX) * 0.15f + 0.05f);
+        
+        // 50/50 chance to be a peak or a trough
+        if (std::rand() % 2 == 0) {
+            drop_magnitude = -drop_magnitude;
+        }
 
-            float lap = laplacian(x, y);
-            float h_curr = heights[idx];
-            float h_prev = heights_prev[idx];
-
-            float h_new = 2.0f * h_curr - h_prev + c_sq_dt_sq * lap;
-            h_new -= damping * (h_curr - h_prev);
-
-            heights_next[idx] = std::clamp(h_new, 0.0f, 1.0f);
+        for (int y = 0; y < resolution; ++y) {
+            for (int x = 0; x < resolution; ++x) {
+                float px = x * dx;
+                float py = y * dx;
+                
+                float dist_sq = (px - drop_center.x) * (px - drop_center.x) + 
+                                (py - drop_center.y) * (py - drop_center.y);
+                
+                if (dist_sq < (drop_radius * 3.0f) * (drop_radius * 3.0f)) {
+                    float effect = std::exp(-dist_sq / (drop_radius * drop_radius));
+                    heights[index(x, y)] += drop_magnitude * effect;
+                }
+            }
         }
     }
 
-    // Shift time steps properly
-    heights_prev = heights;
-    heights = std::move(heights_next);
+    // Clamp the final stacked result just in case drops overlap aggressively
+    for (auto& h : heights) {
+        h = std::clamp(h, 0.0f, 1.0f);
+    }
+}
 
-    apply_boundary_conditions();
+void WaterSimulation::step() {
+    float dx = domain_size / (resolution - 1);
+    
+    // Calculate the absolute maximum safe timestep based on the CFL condition
+    // c * (dt / dx) <= 1 / sqrt(2) -> dt <= dx / (c * sqrt(2))
+    // We multiply by 0.9f to leave a 10% safety margin
+    float max_safe_dt = 0.9f * dx / (wave_speed * 1.41421356f);
+    
+    // Determine how many sub-steps we need to cover the full dt
+    int sub_steps = std::ceil(dt / max_safe_dt);
+    float actual_dt = dt / sub_steps;
+    
+    float c_sq_dt_sq = wave_speed * wave_speed * actual_dt * actual_dt;
+    std::vector<float> heights_next(resolution * resolution);
+
+    // Run the solver loop for however many sub-steps are required
+    for (int s = 0; s < sub_steps; ++s) {
+        for (int y = 0; y < resolution; ++y) {
+            for (int x = 0; x < resolution; ++x) {
+                int idx = index(x, y);
+
+                float lap = laplacian(x, y);
+                float h_curr = heights[idx];
+                float h_prev = heights_prev[idx];
+
+                float h_new = 2.0f * h_curr - h_prev + c_sq_dt_sq * lap;
+                
+                // Scale damping by actual_dt so it remains frame-rate independent
+                h_new -= damping * actual_dt * (h_curr - h_prev);
+
+                heights_next[idx] = std::clamp(h_new, 0.0f, 1.0f);
+            }
+        }
+
+        // Shift time steps properly for the next sub-step
+        heights_prev = heights;
+        heights = heights_next; 
+    }
+}
+
+float WaterSimulation::get_height(int x, int y) const {
+    return heights[index(x, y)];
 }
 
 float WaterSimulation::laplacian(int x, int y) const {
@@ -177,32 +235,4 @@ float WaterSimulation::laplacian(int x, int y) const {
 
     float lap = (h_left + h_right + h_top + h_bottom - 4.0f * h_center) * inv_dx_sq;
     return lap;
-}
-
-void WaterSimulation::apply_boundary_conditions() {
-    // Neumann BC: ∂h/∂n = 0 at walls (no flux)
-    // Implementation: mirror heights at boundaries
-    
-    for (int i = 0; i < resolution; ++i) {
-        // Left and right edges (x = 0, x = resolution-1)
-        heights[index(0, i)] = heights[index(1, i)];
-        heights[index(resolution - 1, i)] = heights[index(resolution - 2, i)];
-        
-        // Top and bottom edges (y = 0, y = resolution-1)
-        heights[index(i, 0)] = heights[index(i, 1)];
-        heights[index(i, resolution - 1)] = heights[index(i, resolution - 2)];
-    }
-    
-    // Corners (average of neighbors)
-    heights[index(0, 0)] = (heights[index(1, 0)] + heights[index(0, 1)]) * 0.5f;
-    heights[index(resolution - 1, 0)] = (heights[index(resolution - 2, 0)] + heights[index(resolution - 1, 1)]) * 0.5f;
-    heights[index(0, resolution - 1)] = (heights[index(1, resolution - 1)] + heights[index(0, resolution - 2)]) * 0.5f;
-    heights[index(resolution - 1, resolution - 1)] = (heights[index(resolution - 2, resolution - 1)] + heights[index(resolution - 1, resolution - 2)]) * 0.5f;
-}
-
-float WaterSimulation::get_height(int x, int y) const {
-    if (x < 0 || x >= resolution || y < 0 || y >= resolution) {
-        return 0.0f;
-    }
-    return heights[index(x, y)];
 }

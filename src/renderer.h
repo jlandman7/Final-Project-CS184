@@ -20,8 +20,14 @@ public:
         framebuffer->read_color_to_cpu(out_pixels);
     }
 
+    void upload_cpu_buffer(const std::vector<glm::vec4>& buffer) const;
+
     const CornellBox& get_scene() const { return cornell_box; }
     const Framebuffer& get_framebuffer() const { return *framebuffer; }
+
+    glm::vec3 get_camera_position() const;
+    glm::mat4 get_view_matrix() const;
+    glm::mat4 get_projection_matrix() const;
 
     void set_water_mesh(WaterMesh* mesh) { water_mesh = mesh; }
 

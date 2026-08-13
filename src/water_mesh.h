@@ -22,6 +22,10 @@ public:
     // Render the water surface
     void render() const;
 
+    const std::vector<glm::vec3>& get_positions() const { return positions; }
+    const std::vector<glm::vec3>& get_normals() const { return normals; }
+    const std::vector<GLuint>& get_indices() const { return indices; }
+
 private:
     const WaterSimulation& simulation;
     

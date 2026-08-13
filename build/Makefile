@@ -249,6 +249,78 @@ src/main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/photon_map.o: src/photon_map.cpp.o
+.PHONY : src/photon_map.o
+
+# target to build an object file
+src/photon_map.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_map.cpp.o
+.PHONY : src/photon_map.cpp.o
+
+src/photon_map.i: src/photon_map.cpp.i
+.PHONY : src/photon_map.i
+
+# target to preprocess a source file
+src/photon_map.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_map.cpp.i
+.PHONY : src/photon_map.cpp.i
+
+src/photon_map.s: src/photon_map.cpp.s
+.PHONY : src/photon_map.s
+
+# target to generate assembly for a file
+src/photon_map.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_map.cpp.s
+.PHONY : src/photon_map.cpp.s
+
+src/photon_mapper.o: src/photon_mapper.cpp.o
+.PHONY : src/photon_mapper.o
+
+# target to build an object file
+src/photon_mapper.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_mapper.cpp.o
+.PHONY : src/photon_mapper.cpp.o
+
+src/photon_mapper.i: src/photon_mapper.cpp.i
+.PHONY : src/photon_mapper.i
+
+# target to preprocess a source file
+src/photon_mapper.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_mapper.cpp.i
+.PHONY : src/photon_mapper.cpp.i
+
+src/photon_mapper.s: src/photon_mapper.cpp.s
+.PHONY : src/photon_mapper.s
+
+# target to generate assembly for a file
+src/photon_mapper.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/photon_mapper.cpp.s
+.PHONY : src/photon_mapper.cpp.s
+
+src/raytracer.o: src/raytracer.cpp.o
+.PHONY : src/raytracer.o
+
+# target to build an object file
+src/raytracer.cpp.o:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/raytracer.cpp.o
+.PHONY : src/raytracer.cpp.o
+
+src/raytracer.i: src/raytracer.cpp.i
+.PHONY : src/raytracer.i
+
+# target to preprocess a source file
+src/raytracer.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/raytracer.cpp.i
+.PHONY : src/raytracer.cpp.i
+
+src/raytracer.s: src/raytracer.cpp.s
+.PHONY : src/raytracer.s
+
+# target to generate assembly for a file
+src/raytracer.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/water_sim.dir/build.make CMakeFiles/water_sim.dir/src/raytracer.cpp.s
+.PHONY : src/raytracer.cpp.s
+
 src/renderer.o: src/renderer.cpp.o
 .PHONY : src/renderer.o
 
@@ -369,6 +441,15 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/photon_map.o"
+	@echo "... src/photon_map.i"
+	@echo "... src/photon_map.s"
+	@echo "... src/photon_mapper.o"
+	@echo "... src/photon_mapper.i"
+	@echo "... src/photon_mapper.s"
+	@echo "... src/raytracer.o"
+	@echo "... src/raytracer.i"
+	@echo "... src/raytracer.s"
 	@echo "... src/renderer.o"
 	@echo "... src/renderer.i"
 	@echo "... src/renderer.s"

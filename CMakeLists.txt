@@ -15,6 +15,9 @@ set(SOURCES
     src/image_output.cpp
     src/water_simulation.cpp
     src/water_mesh.cpp
+    src/raytracer.cpp
+    src/photon_mapper.cpp
+    src/photon_map.cpp
 )
 
 set(HEADERS
@@ -26,6 +29,9 @@ set(HEADERS
     src/image_output.h
     src/water_simulation.h
     src/water_mesh.h
+    src/raytracer.h
+    src/photon_mapper.h
+    src/photon_map.h
 )
 
 add_executable(water_sim ${SOURCES} ${HEADERS})
@@ -33,6 +39,15 @@ add_executable(water_sim ${SOURCES} ${HEADERS})
 find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(glm REQUIRED)
+if(APPLE)
+    execute_process(COMMAND brew --prefix libomp OUTPUT_VARIABLE LIBOMP_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(OpenMP_C_FLAGS "-Xpreprocessor -fopenmp -I${LIBOMP_PREFIX}/include")
+    set(OpenMP_CXX_FLAGS "-Xpreprocessor -fopenmp -I${LIBOMP_PREFIX}/include")
+    set(OpenMP_C_LIB_NAMES "omp")
+    set(OpenMP_CXX_LIB_NAMES "omp")
+    set(OpenMP_omp_LIBRARY "${LIBOMP_PREFIX}/lib/libomp.dylib")
+endif()
+find_package(OpenMP REQUIRED)
 
 # Platform-specific linking
 if(WIN32)
@@ -48,6 +63,7 @@ else()
             OpenGL::GL
             glfw
             glm::glm
+            OpenMP::OpenMP_CXX
     )
 endif()
 

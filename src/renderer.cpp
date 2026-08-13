@@ -102,7 +102,6 @@ void Renderer::load_shaders() {
         void main() {
             vec3 normal = normalize(fs_in.normal);
 
-            // Emissive area light patch check
             if (fs_in.color.r > 2.0) {
                 out_color = vec4(fs_in.color, 1.0);
                 out_normal = vec4(normal, 1.0);
@@ -110,21 +109,15 @@ void Renderer::load_shaders() {
                 return;
             }
 
-            // Approximate area light as a center point light with quadratic attenuation
             vec3 light_pos = vec3(0.5, 0.98, 0.5);
             vec3 light_dir = light_pos - fs_in.position;
             float dist = length(light_dir);
             light_dir = normalize(light_dir);
 
             float attenuation = 1.0 / (1.0 + 0.5 * dist + 1.0 * dist * dist);
-
-            // Ambient
             vec3 ambient = 0.1 * fs_in.color;
-
-            // Diffuse
             float diff = max(dot(normal, light_dir), 0.0);
             vec3 diffuse = diff * fs_in.color * attenuation * 2.0;
-
             vec3 result = ambient + diffuse;
 
             out_color = vec4(result, 1.0);
@@ -140,20 +133,13 @@ void Renderer::load_shaders() {
 
 void Renderer::setup_camera() {
     float aspect = framebuffer->get_width() / float(framebuffer->get_height());
+    this->projection = glm::perspective(glm::radians(38.0f), aspect, 0.1f, 100.0f);
     
-    // Narrower FOV (~38 degrees) prevents wide-angle edge distortion 
-    // and mimics a cinematic lens framing the box neatly.
-    projection = glm::perspective(glm::radians(38.0f), aspect, 0.1f, 100.0f);
-
-    // glm::vec3 camera_pos = glm::vec3(0.5f, 0.70f, 2.20f);
-    // glm::vec3 target = glm::vec3(0.5f, 0.38f, 0.45f);
-    
-    glm::vec3 camera_pos = glm::vec3(0.5f, 0.60f, 2.30f);
-    glm::vec3 target     = glm::vec3(0.5f, 0.40f, 0.50f);
-
+    this->camera_pos = glm::vec3(0.5f, 0.60f, 2.30f);
+    glm::vec3 target = glm::vec3(0.5f, 0.40f, 0.50f);
     glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
     
-    view = glm::lookAt(camera_pos, target, up);
+    this->view = glm::lookAt(camera_pos, target, up);
 }
 
 void Renderer::render_frame(float time) {
@@ -189,16 +175,14 @@ void Renderer::render_frame(float time) {
 }
 
 void Renderer::init_screen_quad() {
-    // 6-vertex standard quad covering NDC [-1, 1]
     float screen_vertices[] = {
-        // Position    // TexCoords
-        -1.0f,  1.0f,  0.0f, 1.0f, // Top-Left
-        -1.0f, -1.0f,  0.0f, 0.0f, // Bottom-Left
-         1.0f, -1.0f,  1.0f, 0.0f, // Bottom-Right
+        -1.0f,  1.0f,  0.0f, 1.0f,
+        -1.0f, -1.0f,  0.0f, 0.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
 
-        -1.0f,  1.0f,  0.0f, 1.0f, // Top-Left
-         1.0f, -1.0f,  1.0f, 0.0f, // Bottom-Right
-         1.0f,  1.0f,  1.0f, 1.0f  // Top-Right
+        -1.0f,  1.0f,  0.0f, 1.0f,
+         1.0f, -1.0f,  1.0f, 0.0f,
+         1.0f,  1.0f,  1.0f, 1.0f
     };
 
     GLuint vbo;
@@ -233,13 +217,8 @@ void Renderer::init_screen_quad() {
 
         void main() {
             vec3 hdrColor = texture(hdrBuffer, TexCoord).rgb;
-            
-            // Reinhard tone mapping
             vec3 mapped = hdrColor / (hdrColor + vec3(1.0));
-            
-            // Gamma correction
             mapped = pow(mapped, vec3(1.0 / 2.2));
-            
             FragColor = vec4(mapped, 1.0);
         }
     )glsl";
@@ -250,11 +229,9 @@ void Renderer::init_screen_quad() {
 }
 
 void Renderer::render_to_screen(int window_fb_width, int window_fb_height) {
-    // Bind window framebuffer (0) and set viewport
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, window_fb_width, window_fb_height);
 
-    // Disable 3D depth testing and backface culling for full-screen pass
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
@@ -272,4 +249,16 @@ void Renderer::render_to_screen(int window_fb_width, int window_fb_height) {
     glBindVertexArray(0);
 
     glUseProgram(0);
+}
+
+glm::vec3 Renderer::get_camera_position() const { return camera_pos; }
+glm::mat4 Renderer::get_view_matrix() const { return view; }
+glm::mat4 Renderer::get_projection_matrix() const { return projection; }
+
+void Renderer::upload_cpu_buffer(const std::vector<glm::vec4>& buffer) const {
+    glBindTexture(GL_TEXTURE_2D, framebuffer->get_color_texture());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 
+                    framebuffer->get_width(), framebuffer->get_height(), 
+                    GL_RGBA, GL_FLOAT, buffer.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
 }

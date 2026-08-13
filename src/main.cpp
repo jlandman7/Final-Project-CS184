@@ -3,6 +3,9 @@
 #include "window.h"
 #include "renderer.h"
 #include "image_output.h"
+#include "photon_map.h"
+#include "photon_mapper.h"
+#include "raytracer.h"
 #include <iostream>
 #include <filesystem>
 #include <vector>
@@ -62,126 +65,129 @@ int main(int argc, char* argv[]) {
         // Parse configuration
         AppConfig config = parse_cli(argc, argv);
 
-        // Validate output directory exists
-        if (!fs::exists(config.video.output_directory)) {
-            throw std::runtime_error("Output directory does not exist: " + config.video.output_directory);
-        }
+        auto start_time = std::chrono::high_resolution_clock::now();
 
         // Create timestamped subdirectory
         std::string run_dir = get_timestamped_output_dir(config.video.output_directory);
         fs::create_directories(run_dir);
-        
         std::string frames_dir = fs::path(run_dir) / "frames";
         fs::create_directories(frames_dir);
-
         std::cout << "Output: " << run_dir << "\n\n";
 
         bool visualize = config.debug.window_mode != WindowVisualization::None;
 
-        // Always create the window/context (hidden if visualize is false)
+        // Init OpenGL and window
         Window window(config.render.output_width, config.render.output_height, "Water Simulator", visualize);
-
-        // Context is now active! Renderer initialization will succeed.
         Renderer renderer(config.render.output_width, config.render.output_height);
         renderer.init();
 
-        WaterSimulationConfig water_config = config.water;
-        WaterSimulation water_sim(water_config);
+        // Init water sim
+        WaterSimulation water_sim(config.water);
         water_sim.initialize();
         WaterMesh water_mesh(water_sim);
-        std::cout << "Water mesh created with " << water_sim.get_resolution() << "x" 
-          << water_sim.get_resolution() << " grid\n";
         renderer.set_water_mesh(&water_mesh);
 
-        std::vector<glm::vec4> hdr_buffer;
+        // Instantiate CPU raytracing components
+        Raytracer cpu_raytracer(renderer.get_scene(), water_sim);
+        PhotonMapper photon_mapper(water_sim);
+        cpu_raytracer.setup_camera(renderer.get_view_matrix(), renderer.get_projection_matrix());
+        
+        std::vector<glm::vec4> hdr_buffer(config.render.output_width * config.render.output_height);
         std::vector<uint8_t> ldr_frame;
 
-        std::cout << "Starting render loop...\n";
-        auto start_time = std::chrono::high_resolution_clock::now();
-
         for (int frame = 0; frame < config.frame_count; ++frame) {
-            try {
-                if (visualize && window.should_close()) break;
+            if (window.should_close()) break;
+            
+            // 1. Update physics
+            water_sim.step();
+            water_mesh.update();
+            cpu_raytracer.sync_geometry(renderer.get_scene(), water_mesh);
 
-                float time = frame / config.render.output_fps;
+            // 2. Render 
+            if (config.debug.lighting_mode == LightingMode::PhotonMapping) {
+                // Re-build photon map every frame because water geometry changed
+                photon_mapper.generate_caustic_map(config.photons.photon_count, cpu_raytracer);
                 
-                // Simulate water
-                water_sim.step();
-                water_mesh.update();
+                // Extract camera data from your existing setup
+                glm::vec3 camera_pos = renderer.get_camera_position();
+                glm::mat4 view_mat = renderer.get_view_matrix();
+                glm::mat4 proj_mat = renderer.get_projection_matrix();
 
-                // Render ONLY to FBO for output
-                renderer.render_frame(time);
+                // Raytrace directly into the CPU buffer
+                cpu_raytracer.render_frame(hdr_buffer, config.render.output_width, config.render.output_height, 
+                                        camera_pos, view_mat, proj_mat, photon_mapper);
+                
+                // Push the CPU buffer to the GPU for live window visualization
+                if (visualize) {
+                    renderer.upload_cpu_buffer(hdr_buffer);
+                }
 
-                // Read from FBO
+            } else {
+                // Fallback to OpenGL rasterized rendering (Blinn-Phong)
+                renderer.render_frame(frame);
                 renderer.read_color_to_cpu(hdr_buffer);
-                ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
-                                                        config.render.output_width,
-                                                        config.render.output_height);
-
-                // Write PNG
-                if (config.output_modes & static_cast<int>(OutputMode::Full)) {
-                    std::ostringstream png_path;
-                    png_path << frames_dir << "/" << config.video.output_filename_base << "_full_" 
-                            << std::setfill('0') << std::setw(4) << frame << ".png";
-                    ImageOutput::write_png(png_path.str(), ldr_frame, 
-                                        config.render.output_width, config.render.output_height);
-                }
-
-                // Display window if enabled (after we've rendered to FBO)
-                if (visualize) {
-                    int fb_w, fb_h;
-                    window.get_framebuffer_size(&fb_w, &fb_h);
-
-                    // Draw tone-mapped HDR texture across the full window framebuffer
-                    renderer.render_to_screen(fb_w, fb_h);
-
-                    window.swap_buffers();
-                    window.poll_events();
-                }
-
-                // Progress
-                float progress = (frame + 1) / float(config.frame_count);
-                int bar_width = 50;
-                int filled = static_cast<int>(progress * bar_width);
-                std::cout << "\r[";
-                for (int i = 0; i < bar_width; ++i) {
-                    std::cout << (i < filled ? "=" : " ");
-                }
-                std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" 
-                        << (frame + 1) << "/" << config.frame_count << ")";
-                std::cout.flush();
-
-                if (visualize) {
-                    window.poll_events();
-                }
-            } catch (const std::exception& e) {
-                std::cerr << "\nError on frame " << frame << ": " << e.what() << "\n";
-                break;
             }
+            
+            // 3. Post processing and output
+            ldr_frame = ImageOutput::tone_map_to_ldr(hdr_buffer, 
+                                                    config.render.output_width,
+                                                    config.render.output_height);
+            
+                // write png
+            if (config.output_modes & static_cast<int>(OutputMode::Full)) {
+                std::ostringstream png_path;
+                png_path << frames_dir << "/" << config.video.output_filename_base << "_full_" 
+                        << std::setfill('0') << std::setw(4) << frame << ".png";
+                ImageOutput::write_png(png_path.str(), ldr_frame, 
+                                    config.render.output_width, config.render.output_height);
+            }
+                // window
+            if (visualize) {
+                int fb_w, fb_h;
+                window.get_framebuffer_size(&fb_w, &fb_h);
+
+                // Draw tone-mapped HDR texture across the full window framebuffer
+                renderer.render_to_screen(fb_w, fb_h);
+
+                window.swap_buffers();
+                window.poll_events();
+            }
+
+                // progress
+            float progress = (frame + 1) / float(config.frame_count);
+            int bar_width = 50;
+            int filled = static_cast<int>(progress * bar_width);
+            std::cout << "\r[";
+            for (int i = 0; i < bar_width; ++i) {
+                std::cout << (i < filled ? "=" : " ");
+            }
+            std::cout << "] " << static_cast<int>(progress * 100.0f) << "% (" 
+                    << (frame + 1) << "/" << config.frame_count << ")";
+            std::cout.flush();
         }
 
-        auto end_time = std::chrono::high_resolution_clock::now();
-        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
-        double elapsed = duration.count() / 1000.0;
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+    double elapsed = duration.count() / 1000.0;
 
-        std::cout << "\n\nRender complete.\n";
+    std::cout << "\n\nRender complete.\n";
 
-        // Write metadata
-        std::string metadata_file = fs::path(run_dir) / "metadata.txt";
-        write_metadata(metadata_file, config, elapsed);
-        std::cout << "Metadata: " << metadata_file << "\n";
+    // Write metadata
+    std::string metadata_file = fs::path(run_dir) / "metadata.txt";
+    write_metadata(metadata_file, config, elapsed);
+    std::cout << "Metadata: " << metadata_file << "\n";
 
-        // Encode MP4
-        if (config.output_modes & static_cast<int>(OutputMode::Full)) {
-            encode_to_mp4(config, run_dir, "_full");
-        }
-
-        std::cout << "Total time: " << elapsed << "s\n";
-
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << "\n";
-        return 1;
+    // Encode MP4
+    if (config.output_modes & static_cast<int>(OutputMode::Full)) {
+        encode_to_mp4(config, run_dir, "_full");
     }
 
-    return 0;
+    std::cout << "Total time: " << elapsed << "s\n";
+
+} catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << "\n";
+    return 1;
+}
+
+return 0;
 }
