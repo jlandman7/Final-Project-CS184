@@ -16,7 +16,7 @@ A physically-based water surface renderer using height field simulation and phot
 ### macOS
 
 ```bash
-brew install glfw glm cmake
+brew install glfw glm cmake libomp
 
 mkdir build && cd build
 cmake ..
@@ -51,23 +51,25 @@ cmake --build . --config Release
 
 ### Basic Example
 
+---- make sure the output directory exists, it won't make it for you ----
+
 ```bash
-./bin/water_sim --output full --output-dir ./output --output-name water_scene
+./bin/water_sim --output full --output-dir ./output_dir --frames 30 --harmonics 4 --wave-speed 6 --water-init gaussian_drops --verbose --photons 50000 --output full
 ```
 
 ### CLI Flags Reference
 
-#### Required Flags
+#### Output Flags
 
 - `--output <modes>` **[REQUIRED]**
-  - Comma-separated list of output modes to generate
+  - Comma-separated list of output modes to generate, especially for debugging
   - Options: `full`, `height`, `photons`
   - Examples: `full`, `full,height`, `full,height,photons`
   - At least one must be specified
 
-- `--output-dir <path>` **[REQUIRED]**
+- `--output-dir <path>`
   - Directory where output files will be written
-  - Must exist; will error if missing
+  - !!! Must exist; will error if missing !!!
   - Example: `--output-dir ./output`
 
 #### Input Mode
@@ -82,6 +84,8 @@ cmake --build . --config Release
 - `--cache-dir <path>` (required if `--input pre-simulated`)
   - Directory containing pre-simulated height field frames
   - Example: `--cache-dir ./cached_sim`
+
+These parameters were added early on but ended up not being used because computing the height field simulation is peanuts compared to the computational demand of photon mapping.
 
 #### Simulation Parameters
 
@@ -99,6 +103,20 @@ cmake --build . --config Release
   - Output video framerate
   - Independent of simulation timestep
   - Example: `--fps 60`
+
+- `--water-init <f>` (default: `cosine`)
+  - Way of initially displacing the water
+  - Options:
+    - `cosine`, `gaussian_drops`, `directional` (broken)
+  - Example: `--water-init gaussian_drops`
+
+- `harmonics <i>` (default: 5)
+  - controls number of cosine waves, gaussian drops...
+  - Example: `--harmonics 11`
+
+- `wave speed <f>` (default: 1)
+  - controls speed of propagation of disturbances
+  - Example: `--wave-speed 7`
 
 #### Quality Presets
 
@@ -127,6 +145,11 @@ cmake --build . --config Release
     - `height`: Show height field visualization
     - `photons`: Show photon distribution
   - Example: `--window height`
+
+- `--lighting <f>` (default: `photon-mapping`)
+  - Control the lighting mode, useful for debugging
+  - Options: 
+    - `blinn-phong`, `photon-mapping`
 
 #### Output Files
 
